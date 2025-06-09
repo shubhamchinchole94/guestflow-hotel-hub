@@ -9,8 +9,17 @@ interface RoomGridProps {
   selectedDate: Date;
 }
 
+interface Room {
+  roomNumber: string;
+  floor: number;
+  type: string;
+  price: number;
+  isOccupied: boolean;
+  guest: any | null;
+}
+
 const RoomGrid = ({ selectedDate }: RoomGridProps) => {
-  const [rooms, setRooms] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [hoveredRoom, setHoveredRoom] = useState<string | null>(null);
   const { openGuestForm, openGuestDetails } = useGuestStore();
 
@@ -30,7 +39,7 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
     
     if (!hotelConfig.totalFloors || !hotelConfig.roomsPerFloor) {
       // Default configuration if no hotel is registered
-      const defaultRooms = [];
+      const defaultRooms: Room[] = [];
       for (let floor = 1; floor <= 2; floor++) {
         for (let room = 1; room <= 4; room++) {
           const roomNumber = `${floor}0${room}`;
@@ -48,7 +57,7 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
       return;
     }
 
-    const generatedRooms = [];
+    const generatedRooms: Room[] = [];
     const { totalFloors, roomsPerFloor, roomTypes = [] } = hotelConfig;
 
     for (let floor = 1; floor <= totalFloors; floor++) {
@@ -82,7 +91,7 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
     setRooms(generatedRooms);
   };
 
-  const handleRoomClick = (room: any) => {
+  const handleRoomClick = (room: Room) => {
     if (room.isOccupied && room.guest) {
       openGuestDetails(room.guest);
     } else {
@@ -90,7 +99,7 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
     }
   };
 
-  const groupedRooms = rooms.reduce((acc: Record<number, any[]>, room) => {
+  const groupedRooms = rooms.reduce((acc: Record<number, Room[]>, room) => {
     if (!acc[room.floor]) {
       acc[room.floor] = [];
     }
@@ -101,7 +110,7 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="text-lg md:text-xl">
           Rooms Status - {format(selectedDate, 'EEEE, MMMM d, yyyy')}
         </CardTitle>
       </CardHeader>
@@ -109,12 +118,12 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
         <div className="space-y-6">
           {Object.entries(groupedRooms).map(([floor, floorRooms]) => (
             <div key={floor}>
-              <h3 className="text-lg font-semibold mb-3">Floor {floor}</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <h3 className="text-base md:text-lg font-semibold mb-3">Floor {floor}</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                 {floorRooms.map((room) => (
                   <div
                     key={room.roomNumber}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                    className={`p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                       hoveredRoom === room.roomNumber
                         ? room.isOccupied
                           ? 'bg-red-100 border-red-300'
@@ -126,11 +135,11 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
                     onClick={() => handleRoomClick(room)}
                   >
                     <div className="text-center">
-                      <div className="text-xl font-bold mb-1">Room</div>
-                      <div className="text-2xl font-bold text-primary mb-2">
+                      <div className="text-lg md:text-xl font-bold mb-1">Room</div>
+                      <div className="text-xl md:text-2xl font-bold text-primary mb-2">
                         {room.roomNumber}
                       </div>
-                      <div className="text-sm text-muted-foreground mb-2">
+                      <div className="text-xs md:text-sm text-muted-foreground mb-2">
                         {room.type} - ₹{room.price}/night
                       </div>
                       {room.isOccupied ? (

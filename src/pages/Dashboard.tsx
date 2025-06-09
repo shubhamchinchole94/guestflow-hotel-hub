@@ -5,8 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { LogOut, User, Hotel, CalendarDays, FileText, Users } from 'lucide-react';
+import { LogOut, User, Hotel, CalendarDays, FileText, Users, Menu } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarInset
+} from '@/components/ui/sidebar';
 import StatsCards from '@/components/StatsCards';
 import RoomGrid from '@/components/RoomGrid';
 import UserManagement from '@/components/UserManagement';
@@ -113,123 +127,183 @@ const Dashboard = () => {
 
   const availableMenuItems = menuItems.filter(item => item.roles.includes(userRole));
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="flex h-16 items-center justify-between px-6">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
-              {hotelConfig.hotelLogo ? (
-                <img 
-                  src={hotelConfig.hotelLogo} 
-                  alt="Hotel logo" 
-                  className="h-8 w-8 object-contain mr-2"
-                />
-              ) : (
-                <Hotel className="h-8 w-8 text-primary mr-2" />
-              )}
-              <h1 className="text-2xl font-bold">
-                {hotelConfig.hotelName || 'GuestFlow Hotel Management'}
+  function AppSidebar() {
+    return (
+      <Sidebar className="border-r border-sidebar-border">
+        <SidebarHeader className="p-4 border-b border-sidebar-border">
+          <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
+            {hotelConfig.hotelLogo ? (
+              <img 
+                src={hotelConfig.hotelLogo} 
+                alt="Hotel logo" 
+                className="h-8 w-8 object-contain mr-3"
+              />
+            ) : (
+              <Hotel className="h-8 w-8 text-sidebar-primary mr-3" />
+            )}
+            <div className="hidden md:block">
+              <h1 className="text-lg font-bold text-sidebar-foreground">
+                {hotelConfig.hotelName || 'GuestFlow'}
               </h1>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground">
-              Welcome, {username} ({userRole})
-            </span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 border-r bg-card h-[calc(100vh-64px)]">
-          <nav className="p-4 space-y-2">
-            {availableMenuItems.map((item) => (
-              <Button
-                key={item.id}
-                variant={activeTab === item.id ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab(item.id)}
-              >
-                <item.icon className="h-4 w-4 mr-2" />
-                {item.label}
-              </Button>
-            ))}
-          </nav>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-6">
-          {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold">Dashboard</h2>
-                <p className="text-muted-foreground">
-                  {format(new Date(), 'EEEE, MMMM d, yyyy')}
-                </p>
-              </div>
-
-              <StatsCards key={refreshKey} />
-
-              {/* Revenue Chart */}
-              {userRole === 'superadmin' && (
-                <RevenueChart key={refreshKey} />
-              )}
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Calendar */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Select Date</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(date) => date && setSelectedDate(date)}
-                      className="rounded-md border"
-                    />
-                    <Button 
-                      variant="outline" 
-                      className="w-full mt-4"
-                      onClick={() => setSelectedDate(new Date())}
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {availableMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      onClick={() => setActiveTab(item.id)}
+                      isActive={activeTab === item.id}
+                      className="w-full"
                     >
-                      Go to Today
-                    </Button>
-                  </CardContent>
-                </Card>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter className="p-4 border-t border-sidebar-border">
+          <div className="text-xs text-sidebar-foreground/70 mb-2">
+            {username} ({userRole})
+          </div>
+          <Button variant="outline" size="sm" onClick={handleLogout} className="w-full">
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        </SidebarFooter>
+      </Sidebar>
+    );
+  }
 
-                {/* Room Grid */}
-                <div className="lg:col-span-2">
-                  <RoomGrid selectedDate={selectedDate} key={refreshKey} />
+  return (
+    <div className="min-h-screen bg-background">
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <AppSidebar />
+          <SidebarInset className="flex-1">
+            {/* Mobile Header */}
+            <header className="flex h-16 items-center justify-between px-4 border-b border-border bg-card/50 backdrop-blur-sm md:hidden">
+              <div className="flex items-center space-x-2">
+                <SidebarTrigger className="md:hidden" />
+                <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
+                  {hotelConfig.hotelLogo ? (
+                    <img 
+                      src={hotelConfig.hotelLogo} 
+                      alt="Hotel logo" 
+                      className="h-6 w-6 object-contain mr-2"
+                    />
+                  ) : (
+                    <Hotel className="h-6 w-6 text-primary mr-2" />
+                  )}
+                  <h1 className="text-lg font-bold">
+                    {hotelConfig.hotelName || 'GuestFlow'}
+                  </h1>
                 </div>
               </div>
-            </div>
-          )}
+            </header>
 
-          {activeTab === 'guests' && (
-            <GuestList key={refreshKey} />
-          )}
+            {/* Desktop Header */}
+            <header className="hidden md:flex h-16 items-center justify-between px-6 border-b border-border bg-card/50 backdrop-blur-sm">
+              <div className="flex items-center space-x-4">
+                <SidebarTrigger />
+                <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
+                  {hotelConfig.hotelLogo ? (
+                    <img 
+                      src={hotelConfig.hotelLogo} 
+                      alt="Hotel logo" 
+                      className="h-8 w-8 object-contain mr-3"
+                    />
+                  ) : (
+                    <Hotel className="h-8 w-8 text-primary mr-3" />
+                  )}
+                  <h1 className="text-2xl font-bold">
+                    {hotelConfig.hotelName || 'GuestFlow Hotel Management'}
+                  </h1>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-muted-foreground">
+                  Welcome, {username} ({userRole})
+                </span>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
+            </header>
 
-          {activeTab === 'users' && userRole === 'superadmin' && (
-            <UserManagement />
-          )}
+            {/* Main Content */}
+            <main className="flex-1 p-4 md:p-6 overflow-auto">
+              {activeTab === 'dashboard' && (
+                <div className="space-y-4 md:space-y-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                    <h2 className="text-2xl md:text-3xl font-bold">Dashboard</h2>
+                    <p className="text-muted-foreground text-sm md:text-base">
+                      {format(new Date(), 'EEEE, MMMM d, yyyy')}
+                    </p>
+                  </div>
 
-          {activeTab === 'hotel' && userRole === 'superadmin' && (
-            <HotelRegistration />
-          )}
+                  <StatsCards key={refreshKey} />
 
-          {activeTab === 'reports' && userRole === 'superadmin' && (
-            <ReportsExport />
-          )}
-        </main>
-      </div>
+                  {/* Revenue Chart - Now visible to all users */}
+                  <RevenueChart key={refreshKey} />
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                    {/* Calendar */}
+                    <Card className="lg:col-span-1">
+                      <CardHeader>
+                        <CardTitle className="text-lg md:text-xl">Select Date</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={(date) => date && setSelectedDate(date)}
+                          className="rounded-md border w-full"
+                        />
+                        <Button 
+                          variant="outline" 
+                          className="w-full mt-4"
+                          onClick={() => setSelectedDate(new Date())}
+                        >
+                          Go to Today
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    {/* Room Grid */}
+                    <div className="lg:col-span-2">
+                      <RoomGrid selectedDate={selectedDate} key={refreshKey} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'guests' && (
+                <GuestList key={refreshKey} />
+              )}
+
+              {activeTab === 'users' && userRole === 'superadmin' && (
+                <UserManagement />
+              )}
+
+              {activeTab === 'hotel' && userRole === 'superadmin' && (
+                <HotelRegistration />
+              )}
+
+              {activeTab === 'reports' && userRole === 'superadmin' && (
+                <ReportsExport />
+              )}
+            </main>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
 
       <GuestRegistration />
     </div>

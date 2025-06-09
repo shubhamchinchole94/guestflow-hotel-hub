@@ -57,37 +57,50 @@ const RevenueChart = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
       {/* Today's Revenue */}
-      <Card>
+      <Card className="hotstar-card-gradient">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
-          <TrendingUp className="h-4 w-4 text-green-600" />
+          <CardTitle className="text-sm md:text-base font-medium">Today's Revenue</CardTitle>
+          <TrendingUp className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">₹{todayRevenue.toLocaleString()}</div>
-          <p className="text-xs text-muted-foreground">
+          <div className="text-xl md:text-2xl font-bold text-primary">₹{todayRevenue.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground mt-1">
             Revenue from check-ins today
           </p>
         </CardContent>
       </Card>
 
       {/* Revenue Chart */}
-      <Card>
+      <Card className="hotstar-card-gradient">
         <CardHeader>
-          <CardTitle>7-Day Revenue Trend</CardTitle>
+          <CardTitle className="text-sm md:text-base">7-Day Revenue Trend</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
+          <ResponsiveContainer width="100%" height={150}>
+            <BarChart data={revenueData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                tickLine={{ stroke: 'hsl(var(--border))' }}
+              />
+              <YAxis 
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                tickLine={{ stroke: 'hsl(var(--border))' }}
+              />
               <Tooltip 
                 formatter={(value, name) => [`₹${value}`, 'Revenue']}
                 labelFormatter={(label) => `Date: ${label}`}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px',
+                  color: 'hsl(var(--card-foreground))'
+                }}
               />
-              <Bar dataKey="revenue" fill="#22c55e" />
+              <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
