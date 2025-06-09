@@ -16,7 +16,7 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
 
   useEffect(() => {
     generateRooms();
-  }, []);
+  }, [selectedDate]);
 
   const generateRooms = () => {
     const hotelConfig = JSON.parse(localStorage.getItem('hotelConfig') || '{}');

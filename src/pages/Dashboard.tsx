@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { LogOut, User, Hotel, CalendarDays, FileText } from 'lucide-react';
+import { LogOut, User, Hotel, CalendarDays, FileText, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import StatsCards from '@/components/StatsCards';
 import RoomGrid from '@/components/RoomGrid';
@@ -13,12 +13,14 @@ import UserManagement from '@/components/UserManagement';
 import HotelRegistration from '@/components/HotelRegistration';
 import GuestRegistration from '@/components/GuestRegistration';
 import ReportsExport from '@/components/ReportsExport';
+import GuestList from '@/components/GuestList';
 
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState('dashboard');
   const [userRole, setUserRole] = useState('');
   const [username, setUsername] = useState('');
+  const [hotelConfig, setHotelConfig] = useState<any>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -48,6 +50,12 @@ const Dashboard = () => {
 
     setUserRole(role);
     setUsername(user || '');
+
+    // Load hotel configuration
+    const savedConfig = localStorage.getItem('hotelConfig');
+    if (savedConfig) {
+      setHotelConfig(JSON.parse(savedConfig));
+    }
 
     // Set up session check interval
     const interval = setInterval(() => {
@@ -79,6 +87,7 @@ const Dashboard = () => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: CalendarDays, roles: ['superadmin', 'user'] },
+    { id: 'guests', label: 'Guest List', icon: Users, roles: ['superadmin', 'user'] },
     { id: 'users', label: 'User Management', icon: User, roles: ['superadmin'] },
     { id: 'hotel', label: 'Hotel Registration', icon: Hotel, roles: ['superadmin'] },
     { id: 'reports', label: 'Reports & Export', icon: FileText, roles: ['superadmin'] }
@@ -92,8 +101,18 @@ const Dashboard = () => {
       <header className="border-b bg-card">
         <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center space-x-4">
-            <Hotel className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold">GuestFlow Hotel Management</h1>
+            {hotelConfig.hotelLogo ? (
+              <img 
+                src={hotelConfig.hotelLogo} 
+                alt="Hotel logo" 
+                className="h-8 w-8 object-contain"
+              />
+            ) : (
+              <Hotel className="h-8 w-8 text-primary" />
+            )}
+            <h1 className="text-2xl font-bold">
+              {hotelConfig.hotelName || 'GuestFlow Hotel Management'}
+            </h1>
           </div>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-muted-foreground">
@@ -167,6 +186,10 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'guests' && (
+            <GuestList />
           )}
 
           {activeTab === 'users' && userRole === 'superadmin' && (

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { useGuestStore } from '@/store/guestStore';
 import { format } from 'date-fns';
-import { Upload, X, Plus, Minus } from 'lucide-react';
+import { Upload, X, Plus, Minus, Eye } from 'lucide-react';
 
 const GuestRegistration = () => {
   const { 
@@ -31,6 +30,7 @@ const GuestRegistration = () => {
       mobile: '',
       address: '',
       identityProof: '',
+      identityProofNumber: '',
       identityFile: null as File | null
     },
     familyMembers: [] as any[],
@@ -45,6 +45,7 @@ const GuestRegistration = () => {
   });
 
   const [dragActive, setDragActive] = useState(false);
+  const [imagePreview, setImagePreview] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (isGuestFormOpen && selectedDate && selectedRoom) {
@@ -172,8 +173,20 @@ const GuestRegistration = () => {
         ...prev,
         primaryGuest: { ...prev.primaryGuest, identityFile: file }
       }));
+      // Create preview for primary guest
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImagePreview(prev => ({ ...prev, primary: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
     } else if (memberIndex !== undefined) {
       updateFamilyMember(memberIndex, 'identityFile', file);
+      // Create preview for family member
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImagePreview(prev => ({ ...prev, [`member-${memberIndex}`]: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
     }
     toast({
       title: "File Uploaded",
@@ -223,6 +236,9 @@ const GuestRegistration = () => {
 
     closeGuestForm();
     resetForm();
+    
+    // Trigger dashboard refresh
+    window.dispatchEvent(new CustomEvent('refreshDashboard'));
   };
 
   const resetForm = () => {
@@ -235,6 +251,7 @@ const GuestRegistration = () => {
         mobile: '',
         address: '',
         identityProof: '',
+        identityProofNumber: '',
         identityFile: null
       },
       familyMembers: [],
@@ -262,37 +279,68 @@ const GuestRegistration = () => {
     closeGuestDetails();
   };
 
-  const FileUploadArea = ({ isPrimary = true, memberIndex }: { isPrimary?: boolean; memberIndex?: number }) => (
-    <div
-      className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-        dragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-primary'
-      }`}
-      onDragEnter={handleDrag}
-      onDragLeave={handleDrag}
-      onDragOver={handleDrag}
-      onDrop={(e) => handleDrop(e, isPrimary, memberIndex)}
-      onClick={() => document.getElementById(`file-${isPrimary ? 'primary' : memberIndex}`)?.click()}
-    >
-      <input
-        id={`file-${isPrimary ? 'primary' : memberIndex}`}
-        type="file"
-        className="hidden"
-        accept=".pdf,.jpg,.jpeg,.png"
-        onChange={(e) => {
-          if (e.target.files?.[0]) {
-            handleFileUpload(e.target.files[0], isPrimary, memberIndex);
-          }
-        }}
-      />
-      <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-      <p className="text-sm text-gray-600">
-        Drag and drop identity proof or click to browse
-      </p>
-      <p className="text-xs text-gray-400">
-        Supports PDF, JPG, PNG files
-      </p>
-    </div>
-  );
+  const FileUploadArea = ({ isPrimary = true, memberIndex }: { isPrimary?: boolean; memberIndex?: number }) => {
+    const previewKey = isPrimary ? 'primary' : `member-${memberIndex}`;
+    const hasPreview = imagePreview[previewKey];
+
+    return (
+      <div className="space-y-2">
+        <div
+          className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+            dragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-primary'
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={(e) => handleDrop(e, isPrimary, memberIndex)}
+          onClick={() => document.getElementById(`file-${isPrimary ? 'primary' : memberIndex}`)?.click()}
+        >
+          <input
+            id={`file-${isPrimary ? 'primary' : memberIndex}`}
+            type="file"
+            className="hidden"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={(e) => {
+              if (e.target.files?.[0]) {
+                handleFileUpload(e.target.files[0], isPrimary, memberIndex);
+              }
+            }}
+          />
+          <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+          <p className="text-sm text-gray-600">
+            Drag and drop identity proof or click to browse
+          </p>
+          <p className="text-xs text-gray-400">
+            Supports PDF, JPG, PNG files
+          </p>
+        </div>
+        
+        {hasPreview && (
+          <div className="relative">
+            <img 
+              src={imagePreview[previewKey]} 
+              alt="Identity proof preview" 
+              className="w-full h-32 object-cover rounded-lg border"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="absolute top-2 right-2"
+              onClick={() => {
+                const newWindow = window.open();
+                if (newWindow) {
+                  newWindow.document.write(`<img src="${imagePreview[previewKey]}" style="max-width: 100%; max-height: 100%;" />`);
+                }
+              }}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -306,6 +354,229 @@ const GuestRegistration = () => {
           </DialogHeader>
           
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Primary Guest Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Primary Guest Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>First Name</Label>
+                    <Input
+                      value={formData.primaryGuest.firstName}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        primaryGuest: {...prev.primaryGuest, firstName: e.target.value}
+                      }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Middle Name</Label>
+                    <Input
+                      value={formData.primaryGuest.middleName}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        primaryGuest: {...prev.primaryGuest, middleName: e.target.value}
+                      }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Last Name</Label>
+                    <Input
+                      value={formData.primaryGuest.lastName}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        primaryGuest: {...prev.primaryGuest, lastName: e.target.value}
+                      }))}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Date of Birth</Label>
+                    <Input
+                      type="date"
+                      value={formData.primaryGuest.dob}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        primaryGuest: {...prev.primaryGuest, dob: e.target.value}
+                      }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Mobile Number</Label>
+                    <Input
+                      value={formData.primaryGuest.mobile}
+                      onChange={(e) => handleMobileChange(e.target.value)}
+                      maxLength={10}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Address</Label>
+                  <Textarea
+                    value={formData.primaryGuest.address}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      primaryGuest: {...prev.primaryGuest, address: e.target.value}
+                    }))}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Identity Proof Type</Label>
+                    <select
+                      value={formData.primaryGuest.identityProof}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        primaryGuest: {...prev.primaryGuest, identityProof: e.target.value}
+                      }))}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2"
+                      required
+                    >
+                      <option value="">Select Identity Proof</option>
+                      <option value="aadhar">Aadhar Card</option>
+                      <option value="pan">PAN Card</option>
+                      <option value="passport">Passport</option>
+                      <option value="voter">Voter ID</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label>Identity Proof Number</Label>
+                    <Input
+                      value={formData.primaryGuest.identityProofNumber}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        primaryGuest: {...prev.primaryGuest, identityProofNumber: e.target.value}
+                      }))}
+                      placeholder="Enter ID number"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Upload Identity Proof</Label>
+                    <FileUploadArea isPrimary={true} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Family Members */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Family Members</CardTitle>
+                  <Button type="button" onClick={addFamilyMember} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Family Member
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {formData.familyMembers.map((member, index) => (
+                  <div key={index} className="border rounded-lg p-4 mb-4 relative">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => removeFamilyMember(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <Label>First Name</Label>
+                          <Input
+                            value={member.firstName}
+                            onChange={(e) => updateFamilyMember(index, 'firstName', e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label>Middle Name</Label>
+                          <Input
+                            value={member.middleName}
+                            onChange={(e) => updateFamilyMember(index, 'middleName', e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Last Name</Label>
+                          <Input
+                            value={member.lastName}
+                            onChange={(e) => updateFamilyMember(index, 'lastName', e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Date of Birth</Label>
+                          <Input
+                            type="date"
+                            value={member.dob}
+                            onChange={(e) => updateFamilyMember(index, 'dob', e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label>Mobile Number</Label>
+                          <Input
+                            value={member.mobile}
+                            onChange={(e) => updateFamilyMember(index, 'mobile', e.target.value)}
+                            maxLength={10}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-4 gap-4">
+                        <div>
+                          <Label>Identity Proof Type</Label>
+                          <select
+                            value={member.identityProof}
+                            onChange={(e) => updateFamilyMember(index, 'identityProof', e.target.value)}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2"
+                            required
+                          >
+                            <option value="">Select Identity Proof</option>
+                            <option value="aadhar">Aadhar Card</option>
+                            <option value="pan">PAN Card</option>
+                            <option value="passport">Passport</option>
+                            <option value="voter">Voter ID</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label>Identity Proof Number</Label>
+                          <Input
+                            value={member.identityProofNumber || ''}
+                            onChange={(e) => updateFamilyMember(index, 'identityProofNumber', e.target.value)}
+                            placeholder="Enter ID number"
+                            required
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Label>Upload Identity Proof</Label>
+                          <FileUploadArea isPrimary={false} memberIndex={index} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
             {/* Stay Duration */}
             <Card>
               <CardHeader>
@@ -395,208 +666,6 @@ const GuestRegistration = () => {
                     />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Primary Guest Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Primary Guest Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label>First Name</Label>
-                    <Input
-                      value={formData.primaryGuest.firstName}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: {...prev.primaryGuest, firstName: e.target.value}
-                      }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label>Middle Name</Label>
-                    <Input
-                      value={formData.primaryGuest.middleName}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: {...prev.primaryGuest, middleName: e.target.value}
-                      }))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Last Name</Label>
-                    <Input
-                      value={formData.primaryGuest.lastName}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: {...prev.primaryGuest, lastName: e.target.value}
-                      }))}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Date of Birth</Label>
-                    <Input
-                      type="date"
-                      value={formData.primaryGuest.dob}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: {...prev.primaryGuest, dob: e.target.value}
-                      }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label>Mobile Number</Label>
-                    <Input
-                      value={formData.primaryGuest.mobile}
-                      onChange={(e) => handleMobileChange(e.target.value)}
-                      maxLength={10}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Address</Label>
-                  <Textarea
-                    value={formData.primaryGuest.address}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      primaryGuest: {...prev.primaryGuest, address: e.target.value}
-                    }))}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Identity Proof Type</Label>
-                    <select
-                      value={formData.primaryGuest.identityProof}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: {...prev.primaryGuest, identityProof: e.target.value}
-                      }))}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2"
-                      required
-                    >
-                      <option value="">Select Identity Proof</option>
-                      <option value="aadhar">Aadhar Card</option>
-                      <option value="pan">PAN Card</option>
-                      <option value="passport">Passport</option>
-                      <option value="voter">Voter ID</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label>Upload Identity Proof</Label>
-                    <FileUploadArea isPrimary={true} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Family Members */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Family Members</CardTitle>
-                  <Button type="button" onClick={addFamilyMember} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Family Member
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {formData.familyMembers.map((member, index) => (
-                  <div key={index} className="border rounded-lg p-4 mb-4 relative">
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => removeFamilyMember(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                    
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <Label>First Name</Label>
-                          <Input
-                            value={member.firstName}
-                            onChange={(e) => updateFamilyMember(index, 'firstName', e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label>Middle Name</Label>
-                          <Input
-                            value={member.middleName}
-                            onChange={(e) => updateFamilyMember(index, 'middleName', e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <Label>Last Name</Label>
-                          <Input
-                            value={member.lastName}
-                            onChange={(e) => updateFamilyMember(index, 'lastName', e.target.value)}
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Date of Birth</Label>
-                          <Input
-                            type="date"
-                            value={member.dob}
-                            onChange={(e) => updateFamilyMember(index, 'dob', e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label>Mobile Number</Label>
-                          <Input
-                            value={member.mobile}
-                            onChange={(e) => updateFamilyMember(index, 'mobile', e.target.value)}
-                            maxLength={10}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label>Identity Proof Type</Label>
-                          <select
-                            value={member.identityProof}
-                            onChange={(e) => updateFamilyMember(index, 'identityProof', e.target.value)}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2"
-                            required
-                          >
-                            <option value="">Select Identity Proof</option>
-                            <option value="aadhar">Aadhar Card</option>
-                            <option value="pan">PAN Card</option>
-                            <option value="passport">Passport</option>
-                            <option value="voter">Voter ID</option>
-                          </select>
-                        </div>
-                        <div>
-                          <Label>Upload Identity Proof</Label>
-                          <FileUploadArea isPrimary={false} memberIndex={index} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </CardContent>
             </Card>
 

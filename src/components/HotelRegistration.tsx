@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
+import { Plus, X, Upload } from 'lucide-react';
 
 const HotelRegistration = () => {
   const [hotelConfig, setHotelConfig] = useState({
     hotelName: '',
+    hotelLogo: '',
     totalFloors: 2,
     roomsPerFloor: 4,
     roomTypes: [
@@ -40,6 +42,34 @@ const HotelRegistration = () => {
     setHotelConfig({ ...hotelConfig, roomTypes: updatedRoomTypes });
   };
 
+  const addRoomType = () => {
+    setHotelConfig({
+      ...hotelConfig,
+      roomTypes: [...hotelConfig.roomTypes, { name: '', price: 0 }]
+    });
+  };
+
+  const removeRoomType = (index: number) => {
+    if (hotelConfig.roomTypes.length > 1) {
+      const updatedRoomTypes = hotelConfig.roomTypes.filter((_, i) => i !== index);
+      setHotelConfig({ ...hotelConfig, roomTypes: updatedRoomTypes });
+    }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setHotelConfig({
+          ...hotelConfig,
+          hotelLogo: reader.result as string
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold">Hotel Registration</h2>
@@ -50,14 +80,36 @@ const HotelRegistration = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Label htmlFor="hotelName">Hotel Name</Label>
-              <Input
-                id="hotelName"
-                value={hotelConfig.hotelName}
-                onChange={(e) => setHotelConfig({...hotelConfig, hotelName: e.target.value})}
-                required
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="hotelName">Hotel Name</Label>
+                <Input
+                  id="hotelName"
+                  value={hotelConfig.hotelName}
+                  onChange={(e) => setHotelConfig({...hotelConfig, hotelName: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="hotelLogo">Hotel Logo</Label>
+                <div className="space-y-2">
+                  <Input
+                    id="hotelLogo"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                  />
+                  {hotelConfig.hotelLogo && (
+                    <div className="mt-2">
+                      <img 
+                        src={hotelConfig.hotelLogo} 
+                        alt="Hotel logo preview" 
+                        className="h-16 w-16 object-contain border rounded"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -86,10 +138,27 @@ const HotelRegistration = () => {
             </div>
 
             <div>
-              <Label className="text-lg font-semibold">Room Types & Pricing</Label>
-              <div className="space-y-4 mt-4">
+              <div className="flex items-center justify-between mb-4">
+                <Label className="text-lg font-semibold">Room Types & Pricing</Label>
+                <Button type="button" onClick={addRoomType} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Room Type
+                </Button>
+              </div>
+              <div className="space-y-4">
                 {hotelConfig.roomTypes.map((roomType, index) => (
-                  <div key={index} className="grid grid-cols-2 gap-4 p-4 border rounded-lg">
+                  <div key={index} className="grid grid-cols-3 gap-4 p-4 border rounded-lg relative">
+                    {hotelConfig.roomTypes.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => removeRoomType(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                     <div>
                       <Label htmlFor={`roomType-${index}`}>Room Type Name</Label>
                       <Input
