@@ -16,6 +16,12 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
 
   useEffect(() => {
     generateRooms();
+    
+    // Listen for dashboard refresh events
+    const handleRefresh = () => generateRooms();
+    window.addEventListener('refreshDashboard', handleRefresh);
+    
+    return () => window.removeEventListener('refreshDashboard', handleRefresh);
   }, [selectedDate]);
 
   const generateRooms = () => {
@@ -43,7 +49,7 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
     }
 
     const generatedRooms = [];
-    const { totalFloors, roomsPerFloor, roomTypes } = hotelConfig;
+    const { totalFloors, roomsPerFloor, roomTypes = [] } = hotelConfig;
 
     for (let floor = 1; floor <= totalFloors; floor++) {
       for (let room = 1; room <= roomsPerFloor; room++) {
@@ -60,7 +66,7 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
 
         // Assign room type cyclically
         const typeIndex = (room - 1) % roomTypes.length;
-        const roomType = roomTypes[typeIndex];
+        const roomType = roomTypes[typeIndex] || { name: 'Regular', price: 1000 };
 
         generatedRooms.push({
           roomNumber,
@@ -84,13 +90,13 @@ const RoomGrid = ({ selectedDate }: RoomGridProps) => {
     }
   };
 
-  const groupedRooms = rooms.reduce((acc, room) => {
+  const groupedRooms = rooms.reduce((acc: Record<number, any[]>, room) => {
     if (!acc[room.floor]) {
       acc[room.floor] = [];
     }
     acc[room.floor].push(room);
     return acc;
-  }, {} as Record<number, any[]>);
+  }, {});
 
   return (
     <Card>

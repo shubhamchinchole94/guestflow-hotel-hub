@@ -14,6 +14,7 @@ import HotelRegistration from '@/components/HotelRegistration';
 import GuestRegistration from '@/components/GuestRegistration';
 import ReportsExport from '@/components/ReportsExport';
 import GuestList from '@/components/GuestList';
+import RevenueChart from '@/components/RevenueChart';
 
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -21,6 +22,7 @@ const Dashboard = () => {
   const [userRole, setUserRole] = useState('');
   const [username, setUsername] = useState('');
   const [hotelConfig, setHotelConfig] = useState<any>({});
+  const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,12 +52,14 @@ const Dashboard = () => {
 
     setUserRole(role);
     setUsername(user || '');
+    loadHotelConfig();
 
-    // Load hotel configuration
-    const savedConfig = localStorage.getItem('hotelConfig');
-    if (savedConfig) {
-      setHotelConfig(JSON.parse(savedConfig));
-    }
+    // Listen for dashboard refresh events
+    const handleRefresh = () => {
+      setRefreshKey(prev => prev + 1);
+      loadHotelConfig();
+    };
+    window.addEventListener('refreshDashboard', handleRefresh);
 
     // Set up session check interval
     const interval = setInterval(() => {
@@ -75,14 +79,28 @@ const Dashboard = () => {
       }
     }, 60000); // Check every minute
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('refreshDashboard', handleRefresh);
+    };
   }, [navigate]);
+
+  const loadHotelConfig = () => {
+    const savedConfig = localStorage.getItem('hotelConfig');
+    if (savedConfig) {
+      setHotelConfig(JSON.parse(savedConfig));
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('username');
     localStorage.removeItem('loginTime');
     navigate('/login');
+  };
+
+  const handleLogoClick = () => {
+    setActiveTab('dashboard');
   };
 
   const menuItems = [
@@ -101,18 +119,20 @@ const Dashboard = () => {
       <header className="border-b bg-card">
         <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center space-x-4">
-            {hotelConfig.hotelLogo ? (
-              <img 
-                src={hotelConfig.hotelLogo} 
-                alt="Hotel logo" 
-                className="h-8 w-8 object-contain"
-              />
-            ) : (
-              <Hotel className="h-8 w-8 text-primary" />
-            )}
-            <h1 className="text-2xl font-bold">
-              {hotelConfig.hotelName || 'GuestFlow Hotel Management'}
-            </h1>
+            <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
+              {hotelConfig.hotelLogo ? (
+                <img 
+                  src={hotelConfig.hotelLogo} 
+                  alt="Hotel logo" 
+                  className="h-8 w-8 object-contain mr-2"
+                />
+              ) : (
+                <Hotel className="h-8 w-8 text-primary mr-2" />
+              )}
+              <h1 className="text-2xl font-bold">
+                {hotelConfig.hotelName || 'GuestFlow Hotel Management'}
+              </h1>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-muted-foreground">
@@ -155,7 +175,12 @@ const Dashboard = () => {
                 </p>
               </div>
 
-              <StatsCards />
+              <StatsCards key={refreshKey} />
+
+              {/* Revenue Chart */}
+              {userRole === 'superadmin' && (
+                <RevenueChart key={refreshKey} />
+              )}
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Calendar */}
@@ -182,14 +207,14 @@ const Dashboard = () => {
 
                 {/* Room Grid */}
                 <div className="lg:col-span-2">
-                  <RoomGrid selectedDate={selectedDate} />
+                  <RoomGrid selectedDate={selectedDate} key={refreshKey} />
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'guests' && (
-            <GuestList />
+            <GuestList key={refreshKey} />
           )}
 
           {activeTab === 'users' && userRole === 'superadmin' && (

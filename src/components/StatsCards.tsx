@@ -12,6 +12,16 @@ const StatsCards = () => {
   });
 
   useEffect(() => {
+    calculateStats();
+    
+    // Listen for dashboard refresh events
+    const handleRefresh = () => calculateStats();
+    window.addEventListener('refreshDashboard', handleRefresh);
+    
+    return () => window.removeEventListener('refreshDashboard', handleRefresh);
+  }, []);
+
+  const calculateStats = () => {
     // Load hotel configuration and calculate stats
     const hotelConfig = JSON.parse(localStorage.getItem('hotelConfig') || '{}');
     const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
@@ -36,7 +46,7 @@ const StatsCards = () => {
         occupancyRate
       });
     }
-  }, []);
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

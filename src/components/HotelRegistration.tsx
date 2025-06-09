@@ -30,6 +30,10 @@ const HotelRegistration = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('hotelConfig', JSON.stringify(hotelConfig));
+    
+    // Trigger dashboard refresh
+    window.dispatchEvent(new Event('refreshDashboard'));
+    
     toast({
       title: "Success",
       description: "Hotel configuration saved successfully"
