@@ -44,7 +44,8 @@ const GuestList = () => {
       guest.primaryGuest.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guest.primaryGuest.mobile.includes(searchTerm) ||
       guest.roomNumber.includes(searchTerm) ||
-      (guest.primaryGuest.identityProof && guest.primaryGuest.identityProof.includes(searchTerm))
+      (guest.primaryGuest.identityProof && guest.primaryGuest.identityProof.includes(searchTerm)) ||
+      (guest.primaryGuest.identityNumber && guest.primaryGuest.identityNumber.includes(searchTerm))
     );
     setFilteredGuests(filtered);
   };

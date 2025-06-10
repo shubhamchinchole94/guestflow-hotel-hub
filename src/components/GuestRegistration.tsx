@@ -30,7 +30,7 @@ const GuestRegistration = () => {
       mobile: '',
       address: '',
       identityProof: '',
-      identityProofNumber: '',
+      identityNumber: '',
       identityFile: null as File | null
     },
     familyMembers: [] as any[],
@@ -145,6 +145,7 @@ const GuestRegistration = () => {
           mobile: '',
           address: '',
           identityProof: '',
+          identityNumber: '',
           identityFile: null
         }
       ]
@@ -251,7 +252,7 @@ const GuestRegistration = () => {
         mobile: '',
         address: '',
         identityProof: '',
-        identityProofNumber: '',
+        identityNumber: '',
         identityFile: null
       },
       familyMembers: [],
@@ -440,7 +441,7 @@ const GuestRegistration = () => {
                         ...prev,
                         primaryGuest: {...prev.primaryGuest, identityProof: e.target.value}
                       }))}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 mt-2.5"
                       required
                     >
                       <option value="">Select Identity Proof</option>
@@ -453,10 +454,10 @@ const GuestRegistration = () => {
                   <div>
                     <Label>Identity Proof Number</Label>
                     <Input
-                      value={formData.primaryGuest.identityProofNumber}
+                      value={formData.primaryGuest.identityNumber}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
-                        primaryGuest: {...prev.primaryGuest, identityProofNumber: e.target.value}
+                        primaryGuest: {...prev.primaryGuest, identityNumber: e.target.value}
                       }))}
                       placeholder="Enter ID number"
                       required
@@ -547,7 +548,7 @@ const GuestRegistration = () => {
                           <select
                             value={member.identityProof}
                             onChange={(e) => updateFamilyMember(index, 'identityProof', e.target.value)}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2"
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 mt-2.5"
                             required
                           >
                             <option value="">Select Identity Proof</option>
@@ -560,8 +561,8 @@ const GuestRegistration = () => {
                         <div>
                           <Label>Identity Proof Number</Label>
                           <Input
-                            value={member.identityProofNumber || ''}
-                            onChange={(e) => updateFamilyMember(index, 'identityProofNumber', e.target.value)}
+                            value={member.identityNumber || ''}
+                            onChange={(e) => updateFamilyMember(index, 'identityNumber', e.target.value)}
                             placeholder="Enter ID number"
                             required
                           />
@@ -589,7 +590,7 @@ const GuestRegistration = () => {
                     <select
                       value={formData.stayDuration}
                       onChange={(e) => setFormData(prev => ({...prev, stayDuration: e.target.value}))}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 mt-2.5"
                     >
                       <option value="12hr">12 Hours (Check-out at 12:00 PM next day)</option>
                       <option value="24hr">24 Hours (From check-in time)</option>
@@ -746,6 +747,10 @@ const GuestRegistration = () => {
                       <Label>Identity Proof</Label>
                       <p className="font-medium capitalize">{selectedGuest.primaryGuest.identityProof}</p>
                     </div>
+                    <div>
+                      <Label>Identity Proof Number</Label>
+                      <p className="font-medium font-mono">{selectedGuest.primaryGuest.identityNumber || 'Not provided'}</p>
+                    </div>
                   </div>
                   <div className="mt-4">
                     <Label>Address</Label>
@@ -780,6 +785,10 @@ const GuestRegistration = () => {
                           <div>
                             <Label>Identity Proof</Label>
                             <p className="font-medium capitalize">{member.identityProof}</p>
+                          </div>
+                          <div>
+                            <Label>Identity Proof Number</Label>
+                            <p className="font-medium font-mono">{member.identityNumber || 'Not provided'}</p>
                           </div>
                         </div>
                       </div>

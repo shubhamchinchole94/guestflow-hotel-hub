@@ -108,7 +108,7 @@
 .form-group input,
 .form-group select,
 .form-group textarea {
-  @apply mt-10;
+  @apply mt-2;
 }
 
 /* Additional spacing for all form elements */
@@ -123,7 +123,7 @@ form label {
 form input,
 form select,
 form textarea {
-  @apply mt-10;
+  @apply mt-2;
 }
 
 /* Custom scrollbar */
