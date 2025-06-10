@@ -37,6 +37,7 @@ const Dashboard = () => {
   const [username, setUsername] = useState('');
   const [hotelConfig, setHotelConfig] = useState<any>({});
   const [refreshKey, setRefreshKey] = useState(0);
+  const [sessionTime, setSessionTime] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,7 +51,7 @@ const Dashboard = () => {
     }
 
     // Check session timeout (15 minutes)
-    const sessionTimeout = 15 * 60 * 1000; // 15 minutes in milliseconds
+    const sessionTimeout = 15 * 60 * 1000;
     const loginTimestamp = new Date(loginTime).getTime();
     const currentTime = new Date().getTime();
 
@@ -67,6 +68,10 @@ const Dashboard = () => {
     setUserRole(role);
     setUsername(user || '');
     loadHotelConfig();
+
+    // Update session time
+    updateSessionTime(loginTime);
+    const sessionInterval = setInterval(() => updateSessionTime(loginTime), 1000);
 
     // Listen for dashboard refresh events
     const handleRefresh = () => {
@@ -91,13 +96,26 @@ const Dashboard = () => {
           });
         }
       }
-    }, 60000); // Check every minute
+    }, 60000);
 
     return () => {
       clearInterval(interval);
+      clearInterval(sessionInterval);
       window.removeEventListener('refreshDashboard', handleRefresh);
     };
   }, [navigate]);
+
+  const updateSessionTime = (loginTime: string) => {
+    const loginTimestamp = new Date(loginTime).getTime();
+    const currentTime = new Date().getTime();
+    const sessionDuration = currentTime - loginTimestamp;
+    
+    const hours = Math.floor(sessionDuration / (1000 * 60 * 60));
+    const minutes = Math.floor((sessionDuration % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((sessionDuration % (1000 * 60)) / 1000);
+    
+    setSessionTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+  };
 
   const loadHotelConfig = () => {
     const savedConfig = localStorage.getItem('hotelConfig');
@@ -170,6 +188,9 @@ const Dashboard = () => {
         </SidebarContent>
         <SidebarFooter className="p-4 border-t border-sidebar-border">
           <div className="text-xs text-sidebar-foreground/70 mb-2">
+            Session: {sessionTime}
+          </div>
+          <div className="text-xs text-sidebar-foreground/70 mb-2">
             {username} ({userRole})
           </div>
           <Button variant="outline" size="sm" onClick={handleLogout} className="w-full">
@@ -187,11 +208,11 @@ const Dashboard = () => {
         <div className="min-h-screen flex w-full">
           <AppSidebar />
           <SidebarInset className="flex-1">
-            {/* Mobile Header */}
-            <header className="flex h-16 items-center justify-between px-4 border-b border-border bg-card/50 backdrop-blur-sm md:hidden">
-              <div className="flex items-center space-x-2">
-                <SidebarTrigger className="md:hidden" />
-                <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
+            {/* Header */}
+            <header className="flex h-16 items-center justify-between px-4 md:px-6 border-b border-border bg-card/50 backdrop-blur-sm">
+              <div className="flex items-center space-x-2 md:space-x-4">
+                <SidebarTrigger />
+                <div className="md:hidden flex items-center cursor-pointer" onClick={handleLogoClick}>
                   {hotelConfig.hotelLogo ? (
                     <img 
                       src={hotelConfig.hotelLogo} 
@@ -206,30 +227,9 @@ const Dashboard = () => {
                   </h1>
                 </div>
               </div>
-            </header>
-
-            {/* Desktop Header */}
-            <header className="hidden md:flex h-16 items-center justify-between px-6 border-b border-border bg-card/50 backdrop-blur-sm">
-              <div className="flex items-center space-x-4">
-                <SidebarTrigger />
-                <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
-                  {hotelConfig.hotelLogo ? (
-                    <img 
-                      src={hotelConfig.hotelLogo} 
-                      alt="Hotel logo" 
-                      className="h-8 w-8 object-contain mr-3"
-                    />
-                  ) : (
-                    <Hotel className="h-8 w-8 text-primary mr-3" />
-                  )}
-                  <h1 className="text-2xl font-bold">
-                    {hotelConfig.hotelName || 'GuestFlow Hotel Management'}
-                  </h1>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
+              <div className="hidden md:flex items-center space-x-4">
                 <span className="text-sm text-muted-foreground">
-                  Welcome, {username} ({userRole})
+                  Session: {sessionTime} | Welcome, {username} ({userRole})
                 </span>
                 <Button variant="outline" size="sm" onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />
@@ -251,11 +251,9 @@ const Dashboard = () => {
 
                   <StatsCards key={refreshKey} />
 
-                  {/* Revenue Chart - Now visible to all users */}
                   <RevenueChart key={refreshKey} />
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-                    {/* Calendar */}
                     <Card className="lg:col-span-1">
                       <CardHeader>
                         <CardTitle className="text-lg md:text-xl">Select Date</CardTitle>
@@ -277,7 +275,6 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    {/* Room Grid */}
                     <div className="lg:col-span-2">
                       <RoomGrid selectedDate={selectedDate} key={refreshKey} />
                     </div>

@@ -17,7 +17,6 @@ const GuestList = () => {
   useEffect(() => {
     loadGuests();
     
-    // Listen for dashboard refresh events
     const handleRefresh = () => loadGuests();
     window.addEventListener('refreshDashboard', handleRefresh);
     
@@ -43,7 +42,8 @@ const GuestList = () => {
       guest.primaryGuest.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guest.primaryGuest.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guest.primaryGuest.mobile.includes(searchTerm) ||
-      guest.roomNumber.includes(searchTerm)
+      guest.roomNumber.includes(searchTerm) ||
+      (guest.primaryGuest.identityProofNumber && guest.primaryGuest.identityProofNumber.includes(searchTerm))
     );
     setFilteredGuests(filtered);
   };
@@ -73,63 +73,68 @@ const GuestList = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold">Guest List</h2>
+      <h2 className="text-2xl md:text-3xl font-bold">Guest List</h2>
       
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <CardTitle>All Registered Guests</CardTitle>
             <div className="flex items-center space-x-2">
               <Search className="h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search by name, mobile, or room..."
+                placeholder="Search by name, mobile, room, or ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64"
+                className="w-full md:w-64"
               />
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[800px]">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-2">Guest Name</th>
-                  <th className="text-left py-2">Room</th>
-                  <th className="text-left py-2">Mobile</th>
-                  <th className="text-left py-2">Check-in</th>
-                  <th className="text-left py-2">Check-out</th>
-                  <th className="text-left py-2">Status</th>
-                  <th className="text-left py-2">Total Guests</th>
-                  <th className="text-left py-2">Remaining Payment</th>
-                  <th className="text-left py-2">Actions</th>
+                  <th className="text-left py-3 px-2">Guest Name</th>
+                  <th className="text-left py-3 px-2">Room</th>
+                  <th className="text-left py-3 px-2">Mobile</th>
+                  <th className="text-left py-3 px-2">ID Proof</th>
+                  <th className="text-left py-3 px-2">Check-in</th>
+                  <th className="text-left py-3 px-2">Check-out</th>
+                  <th className="text-left py-3 px-2">Status</th>
+                  <th className="text-left py-3 px-2">Total Guests</th>
+                  <th className="text-left py-3 px-2">Remaining Payment</th>
+                  <th className="text-left py-3 px-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredGuests.map((guest) => (
                   <tr key={guest.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3">
+                    <td className="py-4 px-2">
                       {guest.primaryGuest.firstName} {guest.primaryGuest.lastName}
                     </td>
-                    <td className="py-3">{guest.roomNumber}</td>
-                    <td className="py-3">{guest.primaryGuest.mobile}</td>
-                    <td className="py-3">
+                    <td className="py-4 px-2">{guest.roomNumber}</td>
+                    <td className="py-4 px-2">{guest.primaryGuest.mobile}</td>
+                    <td className="py-4 px-2 text-sm">
+                      {guest.primaryGuest.identityProofNumber || 'N/A'}
+                    </td>
+                    <td className="py-4 px-2 text-sm">
                       {format(new Date(guest.checkInDate), 'MMM dd, yyyy')} at {guest.checkInTime}
                     </td>
-                    <td className="py-3">
+                    <td className="py-4 px-2 text-sm">
                       {format(new Date(guest.checkOutDate), 'MMM dd, yyyy')} at {guest.checkOutTime}
                     </td>
-                    <td className="py-3">
+                    <td className="py-4 px-2">
                       {getStatusBadge(getGuestStatus(guest))}
                     </td>
-                    <td className="py-3">{guest.totalGuests}</td>
-                    <td className="py-3 text-red-600 font-medium">₹{guest.remainingPayment}</td>
-                    <td className="py-3">
+                    <td className="py-4 px-2">{guest.totalGuests}</td>
+                    <td className="py-4 px-2 text-red-600 font-medium">₹{guest.remainingPayment}</td>
+                    <td className="py-4 px-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => openGuestDetails(guest)}
+                        className="hover:bg-primary hover:text-primary-foreground transition-colors"
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View
