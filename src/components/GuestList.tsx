@@ -100,6 +100,7 @@ const GuestList = () => {
                   <th className="text-left py-2">Room</th>
                   <th className="text-left py-2">Mobile</th>
                   <th className="text-left py-2">Identity Proof</th>
+                  <th className="text-left py-2">ID Number</th>
                   <th className="text-left py-2">Check-in</th>
                   <th className="text-left py-2">Check-out</th>
                   <th className="text-left py-2">Status</th>
@@ -123,6 +124,11 @@ const GuestList = () => {
                           {guest.primaryGuest.identityProof || 'Not provided'}
                         </span>
                       </div>
+                    </td>
+                    <td className="py-3">
+                      <span className="text-sm font-mono">
+                        {guest.primaryGuest.identityNumber || 'Not provided'}
+                      </span>
                     </td>
                     <td className="py-3">
                       {format(new Date(guest.checkInDate), 'MMM dd, yyyy')} at {guest.checkInTime}

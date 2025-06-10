@@ -131,19 +131,19 @@ const Dashboard = () => {
 
   function AppSidebar() {
     return (
-      <Sidebar className="border-r border-border">
+      <Sidebar collapsible="icon" className="border-r border-border">
         <SidebarHeader className="p-4 border-b border-border">
           <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
             {hotelConfig.hotelLogo ? (
               <img 
                 src={hotelConfig.hotelLogo} 
                 alt="Hotel logo" 
-                className="h-8 w-8 object-contain mr-3"
+                className="h-8 w-8 object-contain mr-3 group-data-[collapsible=icon]:mr-0"
               />
             ) : (
-              <Hotel className="h-8 w-8 text-primary mr-3" />
+              <Hotel className="h-8 w-8 text-primary mr-3 group-data-[collapsible=icon]:mr-0" />
             )}
-            <div className="hidden md:block">
+            <div className="group-data-[collapsible=icon]:hidden">
               <h1 className="text-lg font-bold text-foreground">
                 {hotelConfig.hotelName || 'GuestFlow'}
               </h1>
@@ -171,12 +171,12 @@ const Dashboard = () => {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter className="p-4 border-t border-border">
-          <div className="text-xs text-muted-foreground mb-2">
+          <div className="text-xs text-muted-foreground mb-2 group-data-[collapsible=icon]:hidden">
             Session: {sessionTime} | {username} ({userRole})
           </div>
           <Button variant="outline" size="sm" onClick={handleLogout} className="w-full">
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
+            <LogOut className="h-4 w-4 mr-2 group-data-[collapsible=icon]:mr-0" />
+            <span className="group-data-[collapsible=icon]:hidden">Logout</span>
           </Button>
         </SidebarFooter>
       </Sidebar>

@@ -98,17 +98,26 @@
 
 /* Form spacing improvements */
 .form-group {
-  @apply space-y-2;
+  @apply space-y-4;
 }
 
 .form-group label {
-  @apply block text-sm font-medium mb-2;
+  @apply block text-sm font-medium mb-4;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  @apply mt-2;
+  @apply mt-4;
+}
+
+/* Additional spacing for all form elements */
+form > div {
+  @apply space-y-4;
+}
+
+form label {
+  @apply mb-4;
 }
 
 /* Custom scrollbar */
