@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useGuestStore } from '@/store/guestStore';
 import { format } from 'date-fns';
-import { Search, Eye } from 'lucide-react';
+import { Search, Eye, IdCard } from 'lucide-react';
 
 const GuestList = () => {
   const [guests, setGuests] = useState<any[]>([]);
@@ -43,7 +43,8 @@ const GuestList = () => {
       guest.primaryGuest.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guest.primaryGuest.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guest.primaryGuest.mobile.includes(searchTerm) ||
-      guest.roomNumber.includes(searchTerm)
+      guest.roomNumber.includes(searchTerm) ||
+      (guest.primaryGuest.identityProof && guest.primaryGuest.identityProof.includes(searchTerm))
     );
     setFilteredGuests(filtered);
   };
@@ -82,7 +83,7 @@ const GuestList = () => {
             <div className="flex items-center space-x-2">
               <Search className="h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search by name, mobile, or room..."
+                placeholder="Search by name, mobile, room, or ID proof..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-64"
@@ -98,6 +99,7 @@ const GuestList = () => {
                   <th className="text-left py-2">Guest Name</th>
                   <th className="text-left py-2">Room</th>
                   <th className="text-left py-2">Mobile</th>
+                  <th className="text-left py-2">Identity Proof</th>
                   <th className="text-left py-2">Check-in</th>
                   <th className="text-left py-2">Check-out</th>
                   <th className="text-left py-2">Status</th>
@@ -114,6 +116,14 @@ const GuestList = () => {
                     </td>
                     <td className="py-3">{guest.roomNumber}</td>
                     <td className="py-3">{guest.primaryGuest.mobile}</td>
+                    <td className="py-3">
+                      <div className="flex items-center space-x-1">
+                        <IdCard className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">
+                          {guest.primaryGuest.identityProof || 'Not provided'}
+                        </span>
+                      </div>
+                    </td>
                     <td className="py-3">
                       {format(new Date(guest.checkInDate), 'MMM dd, yyyy')} at {guest.checkInTime}
                     </td>

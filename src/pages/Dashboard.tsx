@@ -37,6 +37,7 @@ const Dashboard = () => {
   const [username, setUsername] = useState('');
   const [hotelConfig, setHotelConfig] = useState<any>({});
   const [refreshKey, setRefreshKey] = useState(0);
+  const [sessionTime, setSessionTime] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -66,6 +67,7 @@ const Dashboard = () => {
 
     setUserRole(role);
     setUsername(user || '');
+    setSessionTime(format(new Date(loginTime), 'HH:mm:ss'));
     loadHotelConfig();
 
     // Listen for dashboard refresh events
@@ -129,8 +131,8 @@ const Dashboard = () => {
 
   function AppSidebar() {
     return (
-      <Sidebar className="border-r border-sidebar-border">
-        <SidebarHeader className="p-4 border-b border-sidebar-border">
+      <Sidebar className="border-r border-border">
+        <SidebarHeader className="p-4 border-b border-border">
           <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
             {hotelConfig.hotelLogo ? (
               <img 
@@ -139,10 +141,10 @@ const Dashboard = () => {
                 className="h-8 w-8 object-contain mr-3"
               />
             ) : (
-              <Hotel className="h-8 w-8 text-sidebar-primary mr-3" />
+              <Hotel className="h-8 w-8 text-primary mr-3" />
             )}
             <div className="hidden md:block">
-              <h1 className="text-lg font-bold text-sidebar-foreground">
+              <h1 className="text-lg font-bold text-foreground">
                 {hotelConfig.hotelName || 'GuestFlow'}
               </h1>
             </div>
@@ -168,9 +170,9 @@ const Dashboard = () => {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="p-4 border-t border-sidebar-border">
-          <div className="text-xs text-sidebar-foreground/70 mb-2">
-            {username} ({userRole})
+        <SidebarFooter className="p-4 border-t border-border">
+          <div className="text-xs text-muted-foreground mb-2">
+            Session: {sessionTime} | {username} ({userRole})
           </div>
           <Button variant="outline" size="sm" onClick={handleLogout} className="w-full">
             <LogOut className="h-4 w-4 mr-2" />
@@ -212,24 +214,13 @@ const Dashboard = () => {
             <header className="hidden md:flex h-16 items-center justify-between px-6 border-b border-border bg-card/50 backdrop-blur-sm">
               <div className="flex items-center space-x-4">
                 <SidebarTrigger />
-                <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
-                  {hotelConfig.hotelLogo ? (
-                    <img 
-                      src={hotelConfig.hotelLogo} 
-                      alt="Hotel logo" 
-                      className="h-8 w-8 object-contain mr-3"
-                    />
-                  ) : (
-                    <Hotel className="h-8 w-8 text-primary mr-3" />
-                  )}
-                  <h1 className="text-2xl font-bold">
-                    {hotelConfig.hotelName || 'GuestFlow Hotel Management'}
-                  </h1>
-                </div>
+                <h1 className="text-2xl font-bold">
+                  {hotelConfig.hotelName || 'GuestFlow Hotel Management'}
+                </h1>
               </div>
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-muted-foreground">
-                  Welcome, {username} ({userRole})
+                  Session: {sessionTime} | Welcome, {username} ({userRole})
                 </span>
                 <Button variant="outline" size="sm" onClick={handleLogout}>
                   <LogOut className="h-4 w-4 mr-2" />
