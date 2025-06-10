@@ -102,22 +102,28 @@
 }
 
 .form-group label {
-  @apply block text-sm font-medium mb-4;
+  @apply block text-sm font-medium mb-2;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  @apply mt-4;
+  @apply mt-10;
 }
 
 /* Additional spacing for all form elements */
 form > div {
-  @apply space-y-4;
+  @apply space-y-6;
 }
 
 form label {
-  @apply mb-4;
+  @apply mb-2;
+}
+
+form input,
+form select,
+form textarea {
+  @apply mt-10;
 }
 
 /* Custom scrollbar */
