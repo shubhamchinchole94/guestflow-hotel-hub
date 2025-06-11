@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -362,7 +363,7 @@ const GuestRegistration = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label>First Name</Label>
                     <Input
                       value={formData.primaryGuest.firstName}
@@ -373,7 +374,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>Middle Name</Label>
                     <Input
                       value={formData.primaryGuest.middleName}
@@ -383,7 +384,7 @@ const GuestRegistration = () => {
                       }))}
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>Last Name</Label>
                     <Input
                       value={formData.primaryGuest.lastName}
@@ -397,7 +398,7 @@ const GuestRegistration = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label>Date of Birth</Label>
                     <Input
                       type="date"
@@ -409,7 +410,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>Mobile Number</Label>
                     <Input
                       value={formData.primaryGuest.mobile}
@@ -420,7 +421,7 @@ const GuestRegistration = () => {
                   </div>
                 </div>
 
-                <div>
+                <div className="space-y-2">
                   <Label>Address</Label>
                   <Textarea
                     value={formData.primaryGuest.address}
@@ -433,7 +434,7 @@ const GuestRegistration = () => {
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label>Identity Proof Type</Label>
                     <select
                       value={formData.primaryGuest.identityProof}
@@ -441,7 +442,7 @@ const GuestRegistration = () => {
                         ...prev,
                         primaryGuest: {...prev.primaryGuest, identityProof: e.target.value}
                       }))}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 mt-2.5"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2"
                       required
                     >
                       <option value="">Select Identity Proof</option>
@@ -451,7 +452,7 @@ const GuestRegistration = () => {
                       <option value="voter">Voter ID</option>
                     </select>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>Identity Proof Number</Label>
                     <Input
                       value={formData.primaryGuest.identityNumber}
@@ -463,7 +464,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>Upload Identity Proof</Label>
                     <FileUploadArea isPrimary={true} />
                   </div>
@@ -497,7 +498,7 @@ const GuestRegistration = () => {
                     
                     <div className="space-y-4">
                       <div className="grid grid-cols-3 gap-4">
-                        <div>
+                        <div className="space-y-2">
                           <Label>First Name</Label>
                           <Input
                             value={member.firstName}
@@ -505,14 +506,14 @@ const GuestRegistration = () => {
                             required
                           />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                           <Label>Middle Name</Label>
                           <Input
                             value={member.middleName}
                             onChange={(e) => updateFamilyMember(index, 'middleName', e.target.value)}
                           />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                           <Label>Last Name</Label>
                           <Input
                             value={member.lastName}
@@ -523,7 +524,7 @@ const GuestRegistration = () => {
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
+                        <div className="space-y-2">
                           <Label>Date of Birth</Label>
                           <Input
                             type="date"
@@ -532,7 +533,7 @@ const GuestRegistration = () => {
                             required
                           />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                           <Label>Mobile Number</Label>
                           <Input
                             value={member.mobile}
@@ -543,12 +544,12 @@ const GuestRegistration = () => {
                       </div>
 
                       <div className="grid grid-cols-4 gap-4">
-                        <div>
+                        <div className="space-y-2">
                           <Label>Identity Proof Type</Label>
                           <select
                             value={member.identityProof}
                             onChange={(e) => updateFamilyMember(index, 'identityProof', e.target.value)}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 mt-2.5"
+                            className="w-full rounded-md border border-input bg-background px-3 py-2"
                             required
                           >
                             <option value="">Select Identity Proof</option>
@@ -558,7 +559,7 @@ const GuestRegistration = () => {
                             <option value="voter">Voter ID</option>
                           </select>
                         </div>
-                        <div>
+                        <div className="space-y-2">
                           <Label>Identity Proof Number</Label>
                           <Input
                             value={member.identityNumber || ''}
@@ -567,7 +568,7 @@ const GuestRegistration = () => {
                             required
                           />
                         </div>
-                        <div className="col-span-2">
+                        <div className="col-span-2 space-y-2">
                           <Label>Upload Identity Proof</Label>
                           <FileUploadArea isPrimary={false} memberIndex={index} />
                         </div>
@@ -585,18 +586,18 @@ const GuestRegistration = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label>Duration Type</Label>
                     <select
                       value={formData.stayDuration}
                       onChange={(e) => setFormData(prev => ({...prev, stayDuration: e.target.value}))}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 mt-2.5"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2"
                     >
                       <option value="12hr">12 Hours (Check-out at 12:00 PM next day)</option>
                       <option value="24hr">24 Hours (From check-in time)</option>
                     </select>
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>Fare per Night</Label>
                     <Input
                       type="number"
@@ -608,7 +609,7 @@ const GuestRegistration = () => {
                 </div>
                 
                 <div className="grid grid-cols-4 gap-4 mt-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label>Check-in Date</Label>
                     <Input
                       type="date"
@@ -617,7 +618,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>Check-in Time</Label>
                     <Input
                       type="time"
@@ -626,7 +627,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>Check-out Date</Label>
                     <Input
                       type="date"
@@ -635,7 +636,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>Check-out Time</Label>
                     <Input
                       type="time"
@@ -647,7 +648,7 @@ const GuestRegistration = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label>Advance Payment (₹)</Label>
                     <Input
                       type="number"
@@ -657,7 +658,7 @@ const GuestRegistration = () => {
                       max={formData.farePerNight}
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label>Remaining Payment (₹)</Label>
                     <Input
                       type="number"
@@ -670,7 +671,7 @@ const GuestRegistration = () => {
               </CardContent>
             </Card>
 
-            <div className="flex justify-end space-x-4">
+            <div className="flex justify-center space-x-4 pt-6">
               <Button type="button" variant="outline" onClick={closeGuestForm}>
                 Cancel
               </Button>

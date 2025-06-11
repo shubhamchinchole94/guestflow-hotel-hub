@@ -84,8 +84,8 @@ const HotelRegistration = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
                 <Label htmlFor="hotelName">Hotel Name</Label>
                 <Input
                   id="hotelName"
@@ -94,7 +94,7 @@ const HotelRegistration = () => {
                   required
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="hotelLogo">Hotel Logo</Label>
                 <div className="space-y-2">
                   <Input
@@ -116,8 +116,8 @@ const HotelRegistration = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
                 <Label htmlFor="totalFloors">Total Floors</Label>
                 <Input
                   id="totalFloors"
@@ -128,7 +128,7 @@ const HotelRegistration = () => {
                   required
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="roomsPerFloor">Rooms Per Floor</Label>
                 <Input
                   id="roomsPerFloor"
@@ -151,7 +151,7 @@ const HotelRegistration = () => {
               </div>
               <div className="space-y-4">
                 {hotelConfig.roomTypes.map((roomType, index) => (
-                  <div key={index} className="grid grid-cols-3 gap-4 p-4 border rounded-lg relative">
+                  <div key={index} className="grid grid-cols-3 gap-6 p-4 border rounded-lg relative">
                     {hotelConfig.roomTypes.length > 1 && (
                       <Button
                         type="button"
@@ -163,7 +163,7 @@ const HotelRegistration = () => {
                         <X className="h-4 w-4" />
                       </Button>
                     )}
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor={`roomType-${index}`}>Room Type Name</Label>
                       <Input
                         id={`roomType-${index}`}
@@ -172,7 +172,7 @@ const HotelRegistration = () => {
                         required
                       />
                     </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor={`roomPrice-${index}`}>Price per Night (₹)</Label>
                       <Input
                         id={`roomPrice-${index}`}
@@ -188,9 +188,11 @@ const HotelRegistration = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full">
-              Save Hotel Configuration
-            </Button>
+            <div className="flex justify-center pt-6">
+              <Button type="submit" className="w-full max-w-md">
+                Save Hotel Configuration
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
