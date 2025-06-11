@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,18 +9,16 @@ import { toast } from '@/hooks/use-toast';
 import { useGuestStore } from '@/store/guestStore';
 import { format } from 'date-fns';
 import { Upload, X, Plus, Minus, Eye } from 'lucide-react';
-
 const GuestRegistration = () => {
-  const { 
-    isGuestFormOpen, 
-    isGuestDetailsOpen, 
-    selectedRoom, 
-    selectedDate, 
+  const {
+    isGuestFormOpen,
+    isGuestDetailsOpen,
+    selectedRoom,
+    selectedDate,
     selectedGuest,
-    closeGuestForm, 
-    closeGuestDetails 
+    closeGuestForm,
+    closeGuestDetails
   } = useGuestStore();
-
   const [formData, setFormData] = useState({
     primaryGuest: {
       firstName: '',
@@ -44,19 +41,18 @@ const GuestRegistration = () => {
     advancePayment: 0,
     remainingPayment: 0
   });
-
   const [dragActive, setDragActive] = useState(false);
-  const [imagePreview, setImagePreview] = useState<{ [key: string]: string }>({});
-
+  const [imagePreview, setImagePreview] = useState<{
+    [key: string]: string;
+  }>({});
   useEffect(() => {
     if (isGuestFormOpen && selectedDate && selectedRoom) {
       const roomInfo = getRoomInfo(selectedRoom);
       const checkInDate = format(selectedDate, 'yyyy-MM-dd');
       const checkInTime = format(new Date(), 'HH:mm');
-      
       let checkOutDate = checkInDate;
       let checkOutTime = checkInTime;
-      
+
       // Calculate checkout based on duration
       if (formData.stayDuration === '12hr') {
         checkOutTime = '12:00';
@@ -69,7 +65,6 @@ const GuestRegistration = () => {
         checkOutDate = format(checkOutDateTime, 'yyyy-MM-dd');
         checkOutTime = checkInTime;
       }
-
       setFormData(prev => ({
         ...prev,
         checkInDate,
@@ -80,7 +75,6 @@ const GuestRegistration = () => {
       }));
     }
   }, [isGuestFormOpen, selectedDate, selectedRoom, formData.stayDuration]);
-
   useEffect(() => {
     // Calculate remaining payment
     const remaining = formData.farePerNight - formData.advancePayment;
@@ -89,23 +83,21 @@ const GuestRegistration = () => {
       remainingPayment: Math.max(0, remaining)
     }));
   }, [formData.farePerNight, formData.advancePayment]);
-
   const getRoomInfo = (roomNumber: string) => {
     const hotelConfig = JSON.parse(localStorage.getItem('hotelConfig') || '{}');
-    if (!hotelConfig.roomTypes) return { price: 1000, type: 'Regular' };
-    
+    if (!hotelConfig.roomTypes) return {
+      price: 1000,
+      type: 'Regular'
+    };
+
     // Simple logic to determine room type based on room number
     const roomNum = parseInt(roomNumber.slice(-1));
     const typeIndex = (roomNum - 1) % hotelConfig.roomTypes.length;
     return hotelConfig.roomTypes[typeIndex];
   };
-
   const checkExistingGuest = async (mobile: string) => {
     const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    const existingBooking = bookings.find((booking: any) => 
-      booking.primaryGuest.mobile === mobile
-    );
-    
+    const existingBooking = bookings.find((booking: any) => booking.primaryGuest.mobile === mobile);
     if (existingBooking) {
       setFormData(prev => ({
         ...prev,
@@ -121,64 +113,65 @@ const GuestRegistration = () => {
       });
     }
   };
-
   const handleMobileChange = (mobile: string) => {
     setFormData(prev => ({
       ...prev,
-      primaryGuest: { ...prev.primaryGuest, mobile }
+      primaryGuest: {
+        ...prev.primaryGuest,
+        mobile
+      }
     }));
-    
     if (mobile.length === 10) {
       checkExistingGuest(mobile);
     }
   };
-
   const addFamilyMember = () => {
     setFormData(prev => ({
       ...prev,
-      familyMembers: [
-        ...prev.familyMembers,
-        {
-          firstName: '',
-          middleName: '',
-          lastName: '',
-          dob: '',
-          mobile: '',
-          address: '',
-          identityProof: '',
-          identityNumber: '',
-          identityFile: null
-        }
-      ]
+      familyMembers: [...prev.familyMembers, {
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        dob: '',
+        mobile: '',
+        address: '',
+        identityProof: '',
+        identityNumber: '',
+        identityFile: null
+      }]
     }));
   };
-
   const removeFamilyMember = (index: number) => {
     setFormData(prev => ({
       ...prev,
       familyMembers: prev.familyMembers.filter((_, i) => i !== index)
     }));
   };
-
   const updateFamilyMember = (index: number, field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
-      familyMembers: prev.familyMembers.map((member, i) => 
-        i === index ? { ...member, [field]: value } : member
-      )
+      familyMembers: prev.familyMembers.map((member, i) => i === index ? {
+        ...member,
+        [field]: value
+      } : member)
     }));
   };
-
   const handleFileUpload = (file: File, isPrimary: boolean = true, memberIndex?: number) => {
     if (isPrimary) {
       setFormData(prev => ({
         ...prev,
-        primaryGuest: { ...prev.primaryGuest, identityFile: file }
+        primaryGuest: {
+          ...prev.primaryGuest,
+          identityFile: file
+        }
       }));
       // Create preview for primary guest
       const reader = new FileReader();
       reader.onload = () => {
-        setImagePreview(prev => ({ ...prev, primary: reader.result as string }));
+        setImagePreview(prev => ({
+          ...prev,
+          primary: reader.result as string
+        }));
       };
       reader.readAsDataURL(file);
     } else if (memberIndex !== undefined) {
@@ -186,7 +179,10 @@ const GuestRegistration = () => {
       // Create preview for family member
       const reader = new FileReader();
       reader.onload = () => {
-        setImagePreview(prev => ({ ...prev, [`member-${memberIndex}`]: reader.result as string }));
+        setImagePreview(prev => ({
+          ...prev,
+          [`member-${memberIndex}`]: reader.result as string
+        }));
       };
       reader.readAsDataURL(file);
     }
@@ -195,7 +191,6 @@ const GuestRegistration = () => {
       description: `${file.name} uploaded successfully`
     });
   };
-
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -205,20 +200,16 @@ const GuestRegistration = () => {
       setDragActive(false);
     }
   };
-
   const handleDrop = (e: React.DragEvent, isPrimary: boolean = true, memberIndex?: number) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(e.dataTransfer.files[0], isPrimary, memberIndex);
     }
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     const booking = {
       id: Date.now(),
       roomNumber: selectedRoom,
@@ -226,23 +217,19 @@ const GuestRegistration = () => {
       totalGuests: 1 + formData.familyMembers.length,
       createdAt: new Date().toISOString()
     };
-
     const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
     bookings.push(booking);
     localStorage.setItem('bookings', JSON.stringify(bookings));
-
     toast({
       title: "Booking Confirmed",
       description: `Room ${selectedRoom} booked successfully`
     });
-
     closeGuestForm();
     resetForm();
-    
+
     // Trigger dashboard refresh
     window.dispatchEvent(new CustomEvent('refreshDashboard'));
   };
-
   const resetForm = () => {
     setFormData({
       primaryGuest: {
@@ -267,47 +254,32 @@ const GuestRegistration = () => {
       remainingPayment: 0
     });
   };
-
   const handleCheckOut = (bookingId: number) => {
     const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
     const updatedBookings = bookings.filter((booking: any) => booking.id !== bookingId);
     localStorage.setItem('bookings', JSON.stringify(updatedBookings));
-    
     toast({
       title: "Check-out Successful",
       description: "Guest has been checked out"
     });
-    
     closeGuestDetails();
   };
-
-  const FileUploadArea = ({ isPrimary = true, memberIndex }: { isPrimary?: boolean; memberIndex?: number }) => {
+  const FileUploadArea = ({
+    isPrimary = true,
+    memberIndex
+  }: {
+    isPrimary?: boolean;
+    memberIndex?: number;
+  }) => {
     const previewKey = isPrimary ? 'primary' : `member-${memberIndex}`;
     const hasPreview = imagePreview[previewKey];
-
-    return (
-      <div className="space-y-2">
-        <div
-          className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-            dragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-primary'
-          }`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={(e) => handleDrop(e, isPrimary, memberIndex)}
-          onClick={() => document.getElementById(`file-${isPrimary ? 'primary' : memberIndex}`)?.click()}
-        >
-          <input
-            id={`file-${isPrimary ? 'primary' : memberIndex}`}
-            type="file"
-            className="hidden"
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={(e) => {
-              if (e.target.files?.[0]) {
-                handleFileUpload(e.target.files[0], isPrimary, memberIndex);
-              }
-            }}
-          />
+    return <div className="space-y-2">
+        <div className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${dragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-primary'}`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={e => handleDrop(e, isPrimary, memberIndex)} onClick={() => document.getElementById(`file-${isPrimary ? 'primary' : memberIndex}`)?.click()}>
+          <input id={`file-${isPrimary ? 'primary' : memberIndex}`} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => {
+          if (e.target.files?.[0]) {
+            handleFileUpload(e.target.files[0], isPrimary, memberIndex);
+          }
+        }} />
           <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
           <p className="text-sm text-gray-600">
             Drag and drop identity proof or click to browse
@@ -317,35 +289,20 @@ const GuestRegistration = () => {
           </p>
         </div>
         
-        {hasPreview && (
-          <div className="relative">
-            <img 
-              src={imagePreview[previewKey]} 
-              alt="Identity proof preview" 
-              className="w-full h-32 object-cover rounded-lg border"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="absolute top-2 right-2"
-              onClick={() => {
-                const newWindow = window.open();
-                if (newWindow) {
-                  newWindow.document.write(`<img src="${imagePreview[previewKey]}" style="max-width: 100%; max-height: 100%;" />`);
-                }
-              }}
-            >
+        {hasPreview && <div className="relative">
+            <img src={imagePreview[previewKey]} alt="Identity proof preview" className="w-full h-32 object-cover rounded-lg border" />
+            <Button type="button" variant="secondary" size="sm" className="absolute top-2 right-2" onClick={() => {
+          const newWindow = window.open();
+          if (newWindow) {
+            newWindow.document.write(`<img src="${imagePreview[previewKey]}" style="max-width: 100%; max-height: 100%;" />`);
+          }
+        }}>
               <Eye className="h-4 w-4" />
             </Button>
-          </div>
-        )}
-      </div>
-    );
+          </div>}
+      </div>;
   };
-
-  return (
-    <>
+  return <>
       {/* Guest Registration Form */}
       <Dialog open={isGuestFormOpen} onOpenChange={closeGuestForm}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -365,86 +322,74 @@ const GuestRegistration = () => {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>First Name</Label>
-                    <Input
-                      value={formData.primaryGuest.firstName}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: {...prev.primaryGuest, firstName: e.target.value}
-                      }))}
-                      required
-                    />
+                    <Input value={formData.primaryGuest.firstName} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    primaryGuest: {
+                      ...prev.primaryGuest,
+                      firstName: e.target.value
+                    }
+                  }))} required />
                   </div>
                   <div className="space-y-2">
                     <Label>Middle Name</Label>
-                    <Input
-                      value={formData.primaryGuest.middleName}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: {...prev.primaryGuest, middleName: e.target.value}
-                      }))}
-                    />
+                    <Input value={formData.primaryGuest.middleName} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    primaryGuest: {
+                      ...prev.primaryGuest,
+                      middleName: e.target.value
+                    }
+                  }))} />
                   </div>
                   <div className="space-y-2">
                     <Label>Last Name</Label>
-                    <Input
-                      value={formData.primaryGuest.lastName}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: {...prev.primaryGuest, lastName: e.target.value}
-                      }))}
-                      required
-                    />
+                    <Input value={formData.primaryGuest.lastName} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    primaryGuest: {
+                      ...prev.primaryGuest,
+                      lastName: e.target.value
+                    }
+                  }))} required />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Date of Birth</Label>
-                    <Input
-                      type="date"
-                      value={formData.primaryGuest.dob}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: {...prev.primaryGuest, dob: e.target.value}
-                      }))}
-                      required
-                    />
+                    <Input type="date" value={formData.primaryGuest.dob} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    primaryGuest: {
+                      ...prev.primaryGuest,
+                      dob: e.target.value
+                    }
+                  }))} required />
                   </div>
                   <div className="space-y-2">
                     <Label>Mobile Number</Label>
-                    <Input
-                      value={formData.primaryGuest.mobile}
-                      onChange={(e) => handleMobileChange(e.target.value)}
-                      maxLength={10}
-                      required
-                    />
+                    <Input value={formData.primaryGuest.mobile} onChange={e => handleMobileChange(e.target.value)} maxLength={10} required />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Address</Label>
-                  <Textarea
-                    value={formData.primaryGuest.address}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      primaryGuest: {...prev.primaryGuest, address: e.target.value}
-                    }))}
-                    required
-                  />
+                  <Textarea value={formData.primaryGuest.address} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  primaryGuest: {
+                    ...prev.primaryGuest,
+                    address: e.target.value
+                  }
+                }))} required />
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Identity Proof Type</Label>
-                    <select
-                      value={formData.primaryGuest.identityProof}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: {...prev.primaryGuest, identityProof: e.target.value}
-                      }))}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2"
-                      required
-                    >
+                    <select value={formData.primaryGuest.identityProof} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    primaryGuest: {
+                      ...prev.primaryGuest,
+                      identityProof: e.target.value
+                    }
+                  }))} className="w-full rounded-md border border-input bg-background px-3 py-2" required>
                       <option value="">Select Identity Proof</option>
                       <option value="aadhar">Aadhar Card</option>
                       <option value="pan">PAN Card</option>
@@ -454,15 +399,13 @@ const GuestRegistration = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Identity Proof Number</Label>
-                    <Input
-                      value={formData.primaryGuest.identityNumber}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: {...prev.primaryGuest, identityNumber: e.target.value}
-                      }))}
-                      placeholder="Enter ID number"
-                      required
-                    />
+                    <Input value={formData.primaryGuest.identityNumber} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    primaryGuest: {
+                      ...prev.primaryGuest,
+                      identityNumber: e.target.value
+                    }
+                  }))} placeholder="Enter ID number" required />
                   </div>
                   <div className="space-y-2">
                     <Label>Upload Identity Proof</Label>
@@ -484,15 +427,8 @@ const GuestRegistration = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {formData.familyMembers.map((member, index) => (
-                  <div key={index} className="border rounded-lg p-4 mb-4 relative">
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => removeFamilyMember(index)}
-                    >
+                {formData.familyMembers.map((member, index) => <div key={index} className="border rounded-lg p-4 mb-4 relative">
+                    <Button type="button" variant="destructive" size="sm" className="absolute top-2 right-2" onClick={() => removeFamilyMember(index)}>
                       <X className="h-4 w-4" />
                     </Button>
                     
@@ -500,58 +436,33 @@ const GuestRegistration = () => {
                       <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
                           <Label>First Name</Label>
-                          <Input
-                            value={member.firstName}
-                            onChange={(e) => updateFamilyMember(index, 'firstName', e.target.value)}
-                            required
-                          />
+                          <Input value={member.firstName} onChange={e => updateFamilyMember(index, 'firstName', e.target.value)} required />
                         </div>
                         <div className="space-y-2">
                           <Label>Middle Name</Label>
-                          <Input
-                            value={member.middleName}
-                            onChange={(e) => updateFamilyMember(index, 'middleName', e.target.value)}
-                          />
+                          <Input value={member.middleName} onChange={e => updateFamilyMember(index, 'middleName', e.target.value)} />
                         </div>
                         <div className="space-y-2">
                           <Label>Last Name</Label>
-                          <Input
-                            value={member.lastName}
-                            onChange={(e) => updateFamilyMember(index, 'lastName', e.target.value)}
-                            required
-                          />
+                          <Input value={member.lastName} onChange={e => updateFamilyMember(index, 'lastName', e.target.value)} required />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Date of Birth</Label>
-                          <Input
-                            type="date"
-                            value={member.dob}
-                            onChange={(e) => updateFamilyMember(index, 'dob', e.target.value)}
-                            required
-                          />
+                          <Input type="date" value={member.dob} onChange={e => updateFamilyMember(index, 'dob', e.target.value)} required />
                         </div>
                         <div className="space-y-2">
                           <Label>Mobile Number</Label>
-                          <Input
-                            value={member.mobile}
-                            onChange={(e) => updateFamilyMember(index, 'mobile', e.target.value)}
-                            maxLength={10}
-                          />
+                          <Input value={member.mobile} onChange={e => updateFamilyMember(index, 'mobile', e.target.value)} maxLength={10} />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-4 gap-4">
                         <div className="space-y-2">
                           <Label>Identity Proof Type</Label>
-                          <select
-                            value={member.identityProof}
-                            onChange={(e) => updateFamilyMember(index, 'identityProof', e.target.value)}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2"
-                            required
-                          >
+                          <select value={member.identityProof} onChange={e => updateFamilyMember(index, 'identityProof', e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2" required>
                             <option value="">Select Identity Proof</option>
                             <option value="aadhar">Aadhar Card</option>
                             <option value="pan">PAN Card</option>
@@ -561,12 +472,7 @@ const GuestRegistration = () => {
                         </div>
                         <div className="space-y-2">
                           <Label>Identity Proof Number</Label>
-                          <Input
-                            value={member.identityNumber || ''}
-                            onChange={(e) => updateFamilyMember(index, 'identityNumber', e.target.value)}
-                            placeholder="Enter ID number"
-                            required
-                          />
+                          <Input value={member.identityNumber || ''} onChange={e => updateFamilyMember(index, 'identityNumber', e.target.value)} placeholder="Enter ID number" required />
                         </div>
                         <div className="col-span-2 space-y-2">
                           <Label>Upload Identity Proof</Label>
@@ -574,8 +480,7 @@ const GuestRegistration = () => {
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </CardContent>
             </Card>
 
@@ -588,84 +493,65 @@ const GuestRegistration = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Duration Type</Label>
-                    <select
-                      value={formData.stayDuration}
-                      onChange={(e) => setFormData(prev => ({...prev, stayDuration: e.target.value}))}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2"
-                    >
+                    <select value={formData.stayDuration} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    stayDuration: e.target.value
+                  }))} className="w-full rounded-md border border-input bg-background px-3 py-2">
                       <option value="12hr">12 Hours (Check-out at 12:00 PM next day)</option>
                       <option value="24hr">24 Hours (From check-in time)</option>
                     </select>
                   </div>
                   <div className="space-y-2">
                     <Label>Fare per Night</Label>
-                    <Input
-                      type="number"
-                      value={formData.farePerNight}
-                      onChange={(e) => setFormData(prev => ({...prev, farePerNight: parseInt(e.target.value)}))}
-                      required
-                    />
+                    <Input type="number" value={formData.farePerNight} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    farePerNight: parseInt(e.target.value)
+                  }))} required />
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-4 gap-4 mt-4">
                   <div className="space-y-2">
                     <Label>Check-in Date</Label>
-                    <Input
-                      type="date"
-                      value={formData.checkInDate}
-                      onChange={(e) => setFormData(prev => ({...prev, checkInDate: e.target.value}))}
-                      required
-                    />
+                    <Input type="date" value={formData.checkInDate} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    checkInDate: e.target.value
+                  }))} required />
                   </div>
                   <div className="space-y-2">
                     <Label>Check-in Time</Label>
-                    <Input
-                      type="time"
-                      value={formData.checkInTime}
-                      onChange={(e) => setFormData(prev => ({...prev, checkInTime: e.target.value}))}
-                      required
-                    />
+                    <Input type="time" value={formData.checkInTime} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    checkInTime: e.target.value
+                  }))} required />
                   </div>
                   <div className="space-y-2">
                     <Label>Check-out Date</Label>
-                    <Input
-                      type="date"
-                      value={formData.checkOutDate}
-                      onChange={(e) => setFormData(prev => ({...prev, checkOutDate: e.target.value}))}
-                      required
-                    />
+                    <Input type="date" value={formData.checkOutDate} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    checkOutDate: e.target.value
+                  }))} required />
                   </div>
                   <div className="space-y-2">
                     <Label>Check-out Time</Label>
-                    <Input
-                      type="time"
-                      value={formData.checkOutTime}
-                      onChange={(e) => setFormData(prev => ({...prev, checkOutTime: e.target.value}))}
-                      required
-                    />
+                    <Input type="time" value={formData.checkOutTime} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    checkOutTime: e.target.value
+                  }))} required />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div className="space-y-2">
                     <Label>Advance Payment (₹)</Label>
-                    <Input
-                      type="number"
-                      value={formData.advancePayment}
-                      onChange={(e) => setFormData(prev => ({...prev, advancePayment: parseInt(e.target.value) || 0}))}
-                      min="0"
-                      max={formData.farePerNight}
-                    />
+                    <Input type="number" value={formData.advancePayment} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    advancePayment: parseInt(e.target.value) || 0
+                  }))} min="0" max={formData.farePerNight} />
                   </div>
                   <div className="space-y-2">
                     <Label>Remaining Payment (₹)</Label>
-                    <Input
-                      type="number"
-                      value={formData.remainingPayment}
-                      readOnly
-                      className="bg-gray-50"
-                    />
+                    <Input type="number" value={formData.remainingPayment} readOnly className="bg-gray-50" />
                   </div>
                 </div>
               </CardContent>
@@ -675,7 +561,7 @@ const GuestRegistration = () => {
               <Button type="button" variant="outline" onClick={closeGuestForm}>
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" className="my-0">
                 Confirm Booking
               </Button>
             </div>
@@ -692,8 +578,7 @@ const GuestRegistration = () => {
             </DialogTitle>
           </DialogHeader>
           
-          {selectedGuest && (
-            <div className="space-y-6">
+          {selectedGuest && <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Booking Information</CardTitle>
@@ -760,14 +645,12 @@ const GuestRegistration = () => {
                 </CardContent>
               </Card>
 
-              {selectedGuest.familyMembers && selectedGuest.familyMembers.length > 0 && (
-                <Card>
+              {selectedGuest.familyMembers && selectedGuest.familyMembers.length > 0 && <Card>
                   <CardHeader>
                     <CardTitle>Family Members ({selectedGuest.familyMembers.length})</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {selectedGuest.familyMembers.map((member: any, index: number) => (
-                      <div key={index} className="border rounded-lg p-4 mb-4">
+                    {selectedGuest.familyMembers.map((member: any, index: number) => <div key={index} className="border rounded-lg p-4 mb-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <Label>Name</Label>
@@ -792,29 +675,21 @@ const GuestRegistration = () => {
                             <p className="font-medium font-mono">{member.identityNumber || 'Not provided'}</p>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      </div>)}
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
 
               <div className="flex justify-end space-x-4">
                 <Button variant="outline" onClick={closeGuestDetails}>
                   Close
                 </Button>
-                <Button 
-                  variant="destructive"
-                  onClick={() => handleCheckOut(selectedGuest.id)}
-                >
+                <Button variant="destructive" onClick={() => handleCheckOut(selectedGuest.id)}>
                   Check Out
                 </Button>
               </div>
-            </div>
-          )}
+            </div>}
         </DialogContent>
       </Dialog>
-    </>
-  );
+    </>;
 };
-
 export default GuestRegistration;
