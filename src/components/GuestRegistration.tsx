@@ -9,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { useGuestStore } from '@/store/guestStore';
 import { format } from 'date-fns';
 import { Upload, X, Plus, Minus, Eye } from 'lucide-react';
+
 const GuestRegistration = () => {
   const {
     isGuestFormOpen,
@@ -302,7 +303,8 @@ const GuestRegistration = () => {
           </div>}
       </div>;
   };
-  return <>
+  return (
+    <>
       {/* Guest Registration Form */}
       <Dialog open={isGuestFormOpen} onOpenChange={closeGuestForm}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -561,7 +563,7 @@ const GuestRegistration = () => {
               <Button type="button" variant="outline" onClick={closeGuestForm}>
                 Cancel
               </Button>
-              <Button type="submit" className="my-0">
+              <Button type="submit">
                 Confirm Booking
               </Button>
             </div>
@@ -690,6 +692,8 @@ const GuestRegistration = () => {
             </div>}
         </DialogContent>
       </Dialog>
-    </>;
+    </>
+  );
 };
+
 export default GuestRegistration;

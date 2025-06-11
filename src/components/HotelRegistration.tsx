@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Plus, X, Upload } from 'lucide-react';
+
 const HotelRegistration = () => {
   const [hotelConfig, setHotelConfig] = useState({
     hotelName: '',
@@ -93,34 +94,64 @@ const HotelRegistration = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="hotelName">Hotel Name</Label>
-                <Input id="hotelName" value={hotelConfig.hotelName} onChange={e => setHotelConfig({
-                ...hotelConfig,
-                hotelName: e.target.value
-              })} required />
+                <Input 
+                  id="hotelName" 
+                  value={hotelConfig.hotelName} 
+                  onChange={e => setHotelConfig({
+                    ...hotelConfig,
+                    hotelName: e.target.value
+                  })} 
+                  required 
+                />
               </div>
-              <div className="space-y-0">
+              <div className="space-y-2">
                 <Label htmlFor="hotelLogo">Hotel Logo</Label>
-                <Input id="hotelLogo" type="file" accept="image/*" onChange={handleLogoUpload} />
-                {hotelConfig.hotelLogo && <div className="mt-2">
-                    <img src={hotelConfig.hotelLogo} alt="Hotel logo preview" className="h-16 w-16 object-contain border rounded" />
-                  </div>}
+                <Input 
+                  id="hotelLogo" 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleLogoUpload} 
+                />
+                {hotelConfig.hotelLogo && (
+                  <div className="mt-2">
+                    <img 
+                      src={hotelConfig.hotelLogo} 
+                      alt="Hotel logo preview" 
+                      className="h-16 w-16 object-contain border rounded" 
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="totalFloors">Total Floors</Label>
-                <Input id="totalFloors" type="number" min="1" value={hotelConfig.totalFloors} onChange={e => setHotelConfig({
-                ...hotelConfig,
-                totalFloors: parseInt(e.target.value)
-              })} required />
+                <Input 
+                  id="totalFloors" 
+                  type="number" 
+                  min="1" 
+                  value={hotelConfig.totalFloors} 
+                  onChange={e => setHotelConfig({
+                    ...hotelConfig,
+                    totalFloors: parseInt(e.target.value)
+                  })} 
+                  required 
+                />
               </div>
-              <div className="space-y-0">
+              <div className="space-y-2">
                 <Label htmlFor="roomsPerFloor">Rooms Per Floor</Label>
-                <Input id="roomsPerFloor" type="number" min="1" value={hotelConfig.roomsPerFloor} onChange={e => setHotelConfig({
-                ...hotelConfig,
-                roomsPerFloor: parseInt(e.target.value)
-              })} required />
+                <Input 
+                  id="roomsPerFloor" 
+                  type="number" 
+                  min="1" 
+                  value={hotelConfig.roomsPerFloor} 
+                  onChange={e => setHotelConfig({
+                    ...hotelConfig,
+                    roomsPerFloor: parseInt(e.target.value)
+                  })} 
+                  required 
+                />
               </div>
             </div>
 
