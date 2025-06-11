@@ -92,7 +92,7 @@ const HotelRegistration = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
+              <div className="flex flex-col">
                 <Label htmlFor="hotelName">Hotel Name</Label>
                 <Input 
                   id="hotelName" 
@@ -104,7 +104,7 @@ const HotelRegistration = () => {
                   required 
                 />
               </div>
-              <div className="space-y-2">
+              <div className="flex flex-col">
                 <Label htmlFor="hotelLogo">Hotel Logo</Label>
                 <Input 
                   id="hotelLogo" 
@@ -125,7 +125,7 @@ const HotelRegistration = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
+              <div className="flex flex-col">
                 <Label htmlFor="totalFloors">Total Floors</Label>
                 <Input 
                   id="totalFloors" 
@@ -139,7 +139,7 @@ const HotelRegistration = () => {
                   required 
                 />
               </div>
-              <div className="space-y-2">
+              <div className="flex flex-col">
                 <Label htmlFor="roomsPerFloor">Rooms Per Floor</Label>
                 <Input 
                   id="roomsPerFloor" 
@@ -168,11 +168,11 @@ const HotelRegistration = () => {
                     {hotelConfig.roomTypes.length > 1 && <Button type="button" variant="destructive" size="sm" className="absolute top-2 right-2" onClick={() => removeRoomType(index)}>
                         <X className="h-4 w-4" />
                       </Button>}
-                    <div className="space-y-2">
+                    <div className="flex flex-col">
                       <Label htmlFor={`roomType-${index}`}>Room Type Name</Label>
                       <Input id={`roomType-${index}`} value={roomType.name} onChange={e => updateRoomType(index, 'name', e.target.value)} required />
                     </div>
-                    <div className="space-y-2">
+                    <div className="flex flex-col">
                       <Label htmlFor={`roomPrice-${index}`}>Price per Night (₹)</Label>
                       <Input id={`roomPrice-${index}`} type="number" min="0" value={roomType.price} onChange={e => updateRoomType(index, 'price', parseInt(e.target.value))} required />
                     </div>
