@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Plus, X, Upload } from 'lucide-react';
+
 const HotelRegistration = () => {
   const [hotelConfig, setHotelConfig] = useState({
     hotelName: '',
@@ -81,7 +82,8 @@ const HotelRegistration = () => {
       reader.readAsDataURL(file);
     }
   };
-  return <div className="space-y-6">
+  return (
+    <div className="space-y-6">
       <h2 className="text-3xl font-bold">Hotel Registration</h2>
       
       <Card>
@@ -90,44 +92,72 @@ const HotelRegistration = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="hotelName">Hotel Name</Label>
-                <Input id="hotelName" value={hotelConfig.hotelName} onChange={e => setHotelConfig({
-                ...hotelConfig,
-                hotelName: e.target.value
-              })} required />
+                <Input 
+                  id="hotelName" 
+                  value={hotelConfig.hotelName} 
+                  onChange={e => setHotelConfig({
+                    ...hotelConfig,
+                    hotelName: e.target.value
+                  })} 
+                  required 
+                />
               </div>
-              <div className="space-y-2 my-0">
+              <div className="space-y-2">
                 <Label htmlFor="hotelLogo">Hotel Logo</Label>
-                <div className="space-y-2">
-                  <Input id="hotelLogo" type="file" accept="image/*" onChange={handleLogoUpload} />
-                  {hotelConfig.hotelLogo && <div className="mt-2">
-                      <img src={hotelConfig.hotelLogo} alt="Hotel logo preview" className="h-16 w-16 object-contain border rounded" />
-                    </div>}
-                </div>
+                <Input 
+                  id="hotelLogo" 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleLogoUpload} 
+                />
+                {hotelConfig.hotelLogo && (
+                  <div className="mt-2">
+                    <img 
+                      src={hotelConfig.hotelLogo} 
+                      alt="Hotel logo preview" 
+                      className="h-16 w-16 object-contain border rounded" 
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="totalFloors">Total Floors</Label>
-                <Input id="totalFloors" type="number" min="1" value={hotelConfig.totalFloors} onChange={e => setHotelConfig({
-                ...hotelConfig,
-                totalFloors: parseInt(e.target.value)
-              })} required />
+                <Input 
+                  id="totalFloors" 
+                  type="number" 
+                  min="1" 
+                  value={hotelConfig.totalFloors} 
+                  onChange={e => setHotelConfig({
+                    ...hotelConfig,
+                    totalFloors: parseInt(e.target.value)
+                  })} 
+                  required 
+                />
               </div>
-              <div className="space-y-2 my-0">
+              <div className="space-y-2">
                 <Label htmlFor="roomsPerFloor">Rooms Per Floor</Label>
-                <Input id="roomsPerFloor" type="number" min="1" value={hotelConfig.roomsPerFloor} onChange={e => setHotelConfig({
-                ...hotelConfig,
-                roomsPerFloor: parseInt(e.target.value)
-              })} required />
+                <Input 
+                  id="roomsPerFloor" 
+                  type="number" 
+                  min="1" 
+                  value={hotelConfig.roomsPerFloor} 
+                  onChange={e => setHotelConfig({
+                    ...hotelConfig,
+                    roomsPerFloor: parseInt(e.target.value)
+                  })} 
+                  required 
+                />
               </div>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <Label className="text-lg font-semibold">Room Types & Pricing</Label>
                 <Button type="button" onClick={addRoomType} size="sm">
                   <Plus className="h-4 w-4 mr-2" />
@@ -135,19 +165,41 @@ const HotelRegistration = () => {
                 </Button>
               </div>
               <div className="space-y-4">
-                {hotelConfig.roomTypes.map((roomType, index) => <div key={index} className="grid grid-cols-3 gap-6 p-4 border rounded-lg relative">
-                    {hotelConfig.roomTypes.length > 1 && <Button type="button" variant="destructive" size="sm" className="absolute top-2 right-2" onClick={() => removeRoomType(index)}>
+                {hotelConfig.roomTypes.map((roomType, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg relative">
+                    {hotelConfig.roomTypes.length > 1 && (
+                      <Button 
+                        type="button" 
+                        variant="destructive" 
+                        size="sm" 
+                        className="absolute top-2 right-2" 
+                        onClick={() => removeRoomType(index)}
+                      >
                         <X className="h-4 w-4" />
-                      </Button>}
+                      </Button>
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor={`roomType-${index}`}>Room Type Name</Label>
-                      <Input id={`roomType-${index}`} value={roomType.name} onChange={e => updateRoomType(index, 'name', e.target.value)} required />
+                      <Input 
+                        id={`roomType-${index}`} 
+                        value={roomType.name} 
+                        onChange={e => updateRoomType(index, 'name', e.target.value)} 
+                        required 
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor={`roomPrice-${index}`}>Price per Night (₹)</Label>
-                      <Input id={`roomPrice-${index}`} type="number" min="0" value={roomType.price} onChange={e => updateRoomType(index, 'price', parseInt(e.target.value))} required />
+                      <Input 
+                        id={`roomPrice-${index}`} 
+                        type="number" 
+                        min="0" 
+                        value={roomType.price} 
+                        onChange={e => updateRoomType(index, 'price', parseInt(e.target.value))} 
+                        required 
+                      />
                     </div>
-                  </div>)}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -159,6 +211,8 @@ const HotelRegistration = () => {
           </form>
         </CardContent>
       </Card>
-    </div>;
+    </div>
+  );
 };
+
 export default HotelRegistration;
