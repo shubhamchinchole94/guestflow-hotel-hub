@@ -115,7 +115,7 @@ const HotelRegistration = () => {
                 totalFloors: parseInt(e.target.value)
               })} required />
               </div>
-              <div className="space-y-0">
+              <div className="space-y-0.5 ">
                 <Label htmlFor="roomsPerFloor">Rooms Per Floor</Label>
                 <Input id="roomsPerFloor" type="number" min="1" value={hotelConfig.roomsPerFloor} onChange={e => setHotelConfig({
                 ...hotelConfig,
