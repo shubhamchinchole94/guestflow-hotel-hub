@@ -98,7 +98,7 @@ const HotelRegistration = () => {
                 hotelName: e.target.value
               })} required />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-0">
                 <Label htmlFor="hotelLogo">Hotel Logo</Label>
                 <Input id="hotelLogo" type="file" accept="image/*" onChange={handleLogoUpload} />
                 {hotelConfig.hotelLogo && <div className="mt-2">
@@ -115,7 +115,7 @@ const HotelRegistration = () => {
                 totalFloors: parseInt(e.target.value)
               })} required />
               </div>
-              <div className="space-y-0.5 ">
+              <div className="space-y-0">
                 <Label htmlFor="roomsPerFloor">Rooms Per Floor</Label>
                 <Input id="roomsPerFloor" type="number" min="1" value={hotelConfig.roomsPerFloor} onChange={e => setHotelConfig({
                 ...hotelConfig,
