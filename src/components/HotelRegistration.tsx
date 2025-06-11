@@ -98,7 +98,7 @@ const HotelRegistration = () => {
                 hotelName: e.target.value
               })} required />
               </div>
-              <div className="space-y-2 ">
+              <div className="space-y-1">
                 <Label htmlFor="hotelLogo">Hotel Logo</Label>
                 <Input id="hotelLogo" type="file" accept="image/*" onChange={handleLogoUpload} />
                 {hotelConfig.hotelLogo && <div className="mt-2">
