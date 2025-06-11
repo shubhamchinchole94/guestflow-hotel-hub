@@ -274,7 +274,7 @@ const GuestRegistration = () => {
   }) => {
     const previewKey = isPrimary ? 'primary' : `member-${memberIndex}`;
     const hasPreview = imagePreview[previewKey];
-    return <div className="flex flex-col">
+    return <div className="space-y-2">
         <div className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${dragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-primary'}`} onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={e => handleDrop(e, isPrimary, memberIndex)} onClick={() => document.getElementById(`file-${isPrimary ? 'primary' : memberIndex}`)?.click()}>
           <input id={`file-${isPrimary ? 'primary' : memberIndex}`} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={e => {
           if (e.target.files?.[0]) {
@@ -290,7 +290,7 @@ const GuestRegistration = () => {
           </p>
         </div>
         
-        {hasPreview && <div className="relative mt-2">
+        {hasPreview && <div className="relative">
             <img src={imagePreview[previewKey]} alt="Identity proof preview" className="w-full h-32 object-cover rounded-lg border" />
             <Button type="button" variant="secondary" size="sm" className="absolute top-2 right-2" onClick={() => {
           const newWindow = window.open();
@@ -322,7 +322,7 @@ const GuestRegistration = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>First Name</Label>
                     <Input value={formData.primaryGuest.firstName} onChange={e => setFormData(prev => ({
                     ...prev,
@@ -332,7 +332,7 @@ const GuestRegistration = () => {
                     }
                   }))} required />
                   </div>
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Middle Name</Label>
                     <Input value={formData.primaryGuest.middleName} onChange={e => setFormData(prev => ({
                     ...prev,
@@ -342,7 +342,7 @@ const GuestRegistration = () => {
                     }
                   }))} />
                   </div>
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Last Name</Label>
                     <Input value={formData.primaryGuest.lastName} onChange={e => setFormData(prev => ({
                     ...prev,
@@ -355,7 +355,7 @@ const GuestRegistration = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Date of Birth</Label>
                     <Input type="date" value={formData.primaryGuest.dob} onChange={e => setFormData(prev => ({
                     ...prev,
@@ -365,13 +365,13 @@ const GuestRegistration = () => {
                     }
                   }))} required />
                   </div>
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Mobile Number</Label>
                     <Input value={formData.primaryGuest.mobile} onChange={e => handleMobileChange(e.target.value)} maxLength={10} required />
                   </div>
                 </div>
 
-                <div className="flex flex-col">
+                <div className="space-y-2">
                   <Label>Address</Label>
                   <Textarea value={formData.primaryGuest.address} onChange={e => setFormData(prev => ({
                   ...prev,
@@ -383,7 +383,7 @@ const GuestRegistration = () => {
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Identity Proof Type</Label>
                     <select value={formData.primaryGuest.identityProof} onChange={e => setFormData(prev => ({
                     ...prev,
@@ -399,7 +399,7 @@ const GuestRegistration = () => {
                       <option value="voter">Voter ID</option>
                     </select>
                   </div>
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Identity Proof Number</Label>
                     <Input value={formData.primaryGuest.identityNumber} onChange={e => setFormData(prev => ({
                     ...prev,
@@ -409,7 +409,7 @@ const GuestRegistration = () => {
                     }
                   }))} placeholder="Enter ID number" required />
                   </div>
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Upload Identity Proof</Label>
                     <FileUploadArea isPrimary={true} />
                   </div>
@@ -436,33 +436,33 @@ const GuestRegistration = () => {
                     
                     <div className="space-y-4">
                       <div className="grid grid-cols-3 gap-4">
-                        <div className="flex flex-col">
+                        <div className="space-y-2">
                           <Label>First Name</Label>
                           <Input value={member.firstName} onChange={e => updateFamilyMember(index, 'firstName', e.target.value)} required />
                         </div>
-                        <div className="flex flex-col">
+                        <div className="space-y-2">
                           <Label>Middle Name</Label>
                           <Input value={member.middleName} onChange={e => updateFamilyMember(index, 'middleName', e.target.value)} />
                         </div>
-                        <div className="flex flex-col">
+                        <div className="space-y-2">
                           <Label>Last Name</Label>
                           <Input value={member.lastName} onChange={e => updateFamilyMember(index, 'lastName', e.target.value)} required />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col">
+                        <div className="space-y-2">
                           <Label>Date of Birth</Label>
                           <Input type="date" value={member.dob} onChange={e => updateFamilyMember(index, 'dob', e.target.value)} required />
                         </div>
-                        <div className="flex flex-col">
+                        <div className="space-y-2">
                           <Label>Mobile Number</Label>
                           <Input value={member.mobile} onChange={e => updateFamilyMember(index, 'mobile', e.target.value)} maxLength={10} />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-4 gap-4">
-                        <div className="flex flex-col">
+                        <div className="space-y-2">
                           <Label>Identity Proof Type</Label>
                           <select value={member.identityProof} onChange={e => updateFamilyMember(index, 'identityProof', e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2" required>
                             <option value="">Select Identity Proof</option>
@@ -472,11 +472,11 @@ const GuestRegistration = () => {
                             <option value="voter">Voter ID</option>
                           </select>
                         </div>
-                        <div className="flex flex-col">
+                        <div className="space-y-2">
                           <Label>Identity Proof Number</Label>
                           <Input value={member.identityNumber || ''} onChange={e => updateFamilyMember(index, 'identityNumber', e.target.value)} placeholder="Enter ID number" required />
                         </div>
-                        <div className="col-span-2 flex flex-col">
+                        <div className="col-span-2 space-y-2">
                           <Label>Upload Identity Proof</Label>
                           <FileUploadArea isPrimary={false} memberIndex={index} />
                         </div>
@@ -493,7 +493,7 @@ const GuestRegistration = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Duration Type</Label>
                     <select value={formData.stayDuration} onChange={e => setFormData(prev => ({
                     ...prev,
@@ -503,7 +503,7 @@ const GuestRegistration = () => {
                       <option value="24hr">24 Hours (From check-in time)</option>
                     </select>
                   </div>
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Fare per Night</Label>
                     <Input type="number" value={formData.farePerNight} onChange={e => setFormData(prev => ({
                     ...prev,
@@ -513,28 +513,28 @@ const GuestRegistration = () => {
                 </div>
                 
                 <div className="grid grid-cols-4 gap-4 mt-4">
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Check-in Date</Label>
                     <Input type="date" value={formData.checkInDate} onChange={e => setFormData(prev => ({
                     ...prev,
                     checkInDate: e.target.value
                   }))} required />
                   </div>
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Check-in Time</Label>
                     <Input type="time" value={formData.checkInTime} onChange={e => setFormData(prev => ({
                     ...prev,
                     checkInTime: e.target.value
                   }))} required />
                   </div>
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Check-out Date</Label>
                     <Input type="date" value={formData.checkOutDate} onChange={e => setFormData(prev => ({
                     ...prev,
                     checkOutDate: e.target.value
                   }))} required />
                   </div>
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Check-out Time</Label>
                     <Input type="time" value={formData.checkOutTime} onChange={e => setFormData(prev => ({
                     ...prev,
@@ -544,14 +544,14 @@ const GuestRegistration = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Advance Payment (₹)</Label>
                     <Input type="number" value={formData.advancePayment} onChange={e => setFormData(prev => ({
                     ...prev,
                     advancePayment: parseInt(e.target.value) || 0
                   }))} min="0" max={formData.farePerNight} />
                   </div>
-                  <div className="flex flex-col">
+                  <div className="space-y-2">
                     <Label>Remaining Payment (₹)</Label>
                     <Input type="number" value={formData.remainingPayment} readOnly className="bg-gray-50" />
                   </div>
@@ -559,7 +559,7 @@ const GuestRegistration = () => {
               </CardContent>
             </Card>
 
-            <div className="flex justify-center items-center space-x-4 pt-6">
+            <div className="flex justify-center space-x-4 pt-6">
               <Button type="button" variant="outline" onClick={closeGuestForm}>
                 Cancel
               </Button>
@@ -681,7 +681,7 @@ const GuestRegistration = () => {
                   </CardContent>
                 </Card>}
 
-              <div className="flex justify-end items-center space-x-4">
+              <div className="flex justify-end space-x-4">
                 <Button variant="outline" onClick={closeGuestDetails}>
                   Close
                 </Button>

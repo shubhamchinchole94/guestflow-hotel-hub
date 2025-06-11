@@ -96,18 +96,18 @@
   }
 }
 
-/* Form field alignment improvements */
-.flex.flex-col {
-  @apply items-start;
+/* Form spacing improvements */
+.form-group {
+  @apply space-y-2;
 }
 
-.flex.flex-col > label {
-  @apply mb-2 text-left;
+.form-group label {
+  @apply block text-sm font-medium mb-2;
 }
 
-.flex.flex-col > input,
-.flex.flex-col > select,
-.flex.flex-col > textarea {
+.form-group input,
+.form-group select,
+.form-group textarea {
   @apply w-full;
 }
 
@@ -116,12 +116,19 @@ form > div {
   @apply space-y-4;
 }
 
-/* Button alignment in forms */
-.flex.justify-center.items-center {
-  @apply pt-4;
+/* Form field spacing */
+form .space-y-2 > label {
+  @apply mb-2;
 }
 
-.flex.justify-end.items-center {
+form .space-y-2 > input,
+form .space-y-2 > select,
+form .space-y-2 > textarea {
+  @apply mt-0;
+}
+
+/* Button alignment in forms */
+form .flex.justify-center {
   @apply pt-4;
 }
 
