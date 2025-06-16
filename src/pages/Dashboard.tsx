@@ -29,6 +29,9 @@ import ReportsExport from '@/components/ReportsExport';
 import GuestList from '@/components/GuestList';
 import RevenueChart from '@/components/RevenueChart';
 import CompanyMaster from '@/components/CompanyMaster';
+import BulkBooking from '@/components/BulkBooking';
+import BillGeneration from '@/components/BillGeneration';
+import RoomTransfer from '@/components/RoomTransfer';
 
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -38,6 +41,13 @@ const Dashboard = () => {
   const [hotelConfig, setHotelConfig] = useState<any>({});
   const [refreshKey, setRefreshKey] = useState(0);
   const [sessionTime, setSessionTime] = useState('');
+  
+  // New state for additional dialogs
+  const [isBulkBookingOpen, setIsBulkBookingOpen] = useState(false);
+  const [isBillGenerationOpen, setIsBillGenerationOpen] = useState(false);
+  const [isRoomTransferOpen, setIsRoomTransferOpen] = useState(false);
+  const [targetRoomForTransfer, setTargetRoomForTransfer] = useState<string>('');
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,8 +60,7 @@ const Dashboard = () => {
       return;
     }
 
-    // Check session timeout (15 minutes)
-    const sessionTimeout = 15 * 60 * 1000; // 15 minutes in milliseconds
+    const sessionTimeout = 15 * 60 * 1000;
     const loginTimestamp = new Date(loginTime).getTime();
     const currentTime = new Date().getTime();
 
@@ -70,14 +79,21 @@ const Dashboard = () => {
     setSessionTime(format(new Date(loginTime), 'HH:mm:ss'));
     loadHotelConfig();
 
-    // Listen for dashboard refresh events
     const handleRefresh = () => {
       setRefreshKey(prev => prev + 1);
       loadHotelConfig();
     };
     window.addEventListener('refreshDashboard', handleRefresh);
 
-    // Set up session check interval
+    // Check for bill generation trigger
+    const handleBillGeneration = () => {
+      const currentBill = localStorage.getItem('currentBill');
+      if (currentBill) {
+        setIsBillGenerationOpen(true);
+      }
+    };
+    window.addEventListener('generateBill', handleBillGeneration);
+
     const interval = setInterval(() => {
       const currentLoginTime = localStorage.getItem('loginTime');
       if (currentLoginTime) {
@@ -93,11 +109,12 @@ const Dashboard = () => {
           });
         }
       }
-    }, 60000); // Check every minute
+    }, 60000);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('refreshDashboard', handleRefresh);
+      window.removeEventListener('generateBill', handleBillGeneration);
     };
   }, [navigate]);
 
@@ -117,6 +134,20 @@ const Dashboard = () => {
 
   const handleLogoClick = () => {
     setActiveTab('dashboard');
+  };
+
+  const handleBulkBookingOpen = () => {
+    setIsBulkBookingOpen(true);
+  };
+
+  const handleRoomTransferOpen = (roomNumber?: string) => {
+    setTargetRoomForTransfer(roomNumber || '');
+    setIsRoomTransferOpen(true);
+  };
+
+  const handleRoomStatusChange = (roomNumber: string, status: string) => {
+    // This will be handled by the RoomGrid component
+    console.log(`Room ${roomNumber} status changed to ${status}`);
   };
 
   const menuItems = [
@@ -242,12 +273,9 @@ const Dashboard = () => {
                   </div>
 
                   <StatsCards key={refreshKey} />
-
-                  {/* Revenue Chart - Now visible to all users */}
                   <RevenueChart key={refreshKey} />
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-                    {/* Calendar */}
                     <Card className="lg:col-span-1">
                       <CardHeader>
                         <CardTitle className="text-lg md:text-xl">Select Date</CardTitle>
@@ -269,9 +297,14 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
 
-                    {/* Room Grid */}
                     <div className="lg:col-span-2">
-                      <RoomGrid selectedDate={selectedDate} key={refreshKey} />
+                      <RoomGrid 
+                        selectedDate={selectedDate} 
+                        key={refreshKey}
+                        onBulkBookingOpen={handleBulkBookingOpen}
+                        onRoomTransferOpen={handleRoomTransferOpen}
+                        onRoomStatusChange={handleRoomStatusChange}
+                      />
                     </div>
                   </div>
                 </div>
@@ -301,7 +334,22 @@ const Dashboard = () => {
         </div>
       </SidebarProvider>
 
+      {/* All Dialog Components */}
       <GuestRegistration />
+      <BulkBooking 
+        isOpen={isBulkBookingOpen}
+        onClose={() => setIsBulkBookingOpen(false)}
+        selectedDate={selectedDate}
+      />
+      <BillGeneration
+        isOpen={isBillGenerationOpen}
+        onClose={() => setIsBillGenerationOpen(false)}
+      />
+      <RoomTransfer
+        isOpen={isRoomTransferOpen}
+        onClose={() => setIsRoomTransferOpen(false)}
+        targetRoomNumber={targetRoomForTransfer}
+      />
     </div>
   );
 };
