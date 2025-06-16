@@ -143,15 +143,6 @@ form .flex.space-x-2 > button {
   @apply p-6;
 }
 
-/* Grid alignment improvements */
-.grid.gap-4 {
-  @apply gap-4;
-}
-
-.grid.gap-6 {
-  @apply gap-6;
-}
-
 /* Input and select consistent height */
 input[type="text"],
 input[type="email"],
