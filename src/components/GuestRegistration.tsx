@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -795,7 +794,7 @@ const GuestRegistration = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Extra Bed */}
-                <div className="checkbox-wrapper">
+                <div className="flex items-center space-x-2">
                   <Checkbox
                     id="extraBed"
                     checked={formData.extraBed}
@@ -811,7 +810,7 @@ const GuestRegistration = () => {
                   <Label className="text-sm font-medium mb-3 block">Meal Plan</Label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {hotelConfig.enabledMealPlans?.breakfast && hotelConfig.mealPrices?.breakfast && (
-                      <div className="checkbox-wrapper">
+                      <div className="flex items-center space-x-2">
                         <Checkbox
                           id="breakfast"
                           checked={formData.mealPlan.breakfast}
@@ -826,7 +825,7 @@ const GuestRegistration = () => {
                       </div>
                     )}
                     {hotelConfig.enabledMealPlans?.lunch && hotelConfig.mealPrices?.lunch && (
-                      <div className="checkbox-wrapper">
+                      <div className="flex items-center space-x-2">
                         <Checkbox
                           id="lunch"
                           checked={formData.mealPlan.lunch}
@@ -841,7 +840,7 @@ const GuestRegistration = () => {
                       </div>
                     )}
                     {hotelConfig.enabledMealPlans?.dinner && hotelConfig.mealPrices?.dinner && (
-                      <div className="checkbox-wrapper">
+                      <div className="flex items-center space-x-2">
                         <Checkbox
                           id="dinner"
                           checked={formData.mealPlan.dinner}
@@ -1011,7 +1010,7 @@ const GuestRegistration = () => {
               </CardContent>
             </Card>
 
-            <div className="button-group">
+            <div className="flex justify-center space-x-4 pt-6">
               <Button type="button" variant="outline" onClick={closeGuestForm}>
                 Cancel
               </Button>
@@ -1138,7 +1137,7 @@ const GuestRegistration = () => {
                 </Card>
               )}
 
-              <div className="button-group">
+              <div className="flex justify-center space-x-4 pt-6">
                 <Button variant="outline" onClick={closeGuestDetails}>
                   Close
                 </Button>
@@ -1250,7 +1249,7 @@ const GuestRegistration = () => {
                 Generated on: {new Date(billData.generatedAt).toLocaleString()}
               </div>
 
-              <div className="button-group">
+              <div className="flex justify-center space-x-4 pt-6">
                 <Button variant="outline" onClick={() => setShowBill(false)}>
                   Close
                 </Button>
