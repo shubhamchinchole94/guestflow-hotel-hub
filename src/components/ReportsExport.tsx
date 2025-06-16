@@ -6,18 +6,28 @@ import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { FileText, Download } from 'lucide-react';
-import { format, subMonths, subYears } from 'date-fns';
+import { format, subMonths, subYears, isToday } from 'date-fns';
 
 const ReportsExport = () => {
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
     from: new Date(),
     to: new Date()
   });
-  const [selectedPeriod, setSelectedPeriod] = useState('custom');
+  const [selectedPeriod, setSelectedPeriod] = useState('daily');
+  const [reportType, setReportType] = useState<'daily' | 'range'>('daily');
 
   const setPredefinedPeriod = (period: string) => {
     const today = new Date();
     let from = new Date();
+    
+    if (period === 'daily') {
+      setReportType('daily');
+      setDateRange({ from: today, to: today });
+      setSelectedPeriod('daily');
+      return;
+    }
+
+    setReportType('range');
     
     switch (period) {
       case '1month':
@@ -42,10 +52,35 @@ const ReportsExport = () => {
 
   const getFilteredBookings = () => {
     const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
+    
+    if (reportType === 'daily') {
+      return bookings.filter((booking: any) => {
+        const checkInDate = new Date(booking.checkInDate);
+        return format(checkInDate, 'yyyy-MM-dd') === format(dateRange.from, 'yyyy-MM-dd');
+      });
+    }
+    
     return bookings.filter((booking: any) => {
       const checkInDate = new Date(booking.checkInDate);
       return checkInDate >= dateRange.from && checkInDate <= dateRange.to;
     });
+  };
+
+  const getDailyStats = () => {
+    const bookings = getFilteredBookings();
+    const totalRevenue = bookings.reduce((sum: number, booking: any) => sum + booking.farePerNight, 0);
+    const totalAdvance = bookings.reduce((sum: number, booking: any) => sum + booking.advancePayment, 0);
+    const totalPending = bookings.reduce((sum: number, booking: any) => sum + booking.remainingPayment, 0);
+    const totalGuests = bookings.reduce((sum: number, booking: any) => sum + booking.totalGuests, 0);
+    
+    return {
+      totalBookings: bookings.length,
+      totalRevenue,
+      totalAdvance,
+      totalPending,
+      totalGuests,
+      occupancyRate: 0 // This would need room configuration
+    };
   };
 
   const exportToPDF = () => {
@@ -60,7 +95,12 @@ const ReportsExport = () => {
       return;
     }
 
-    // Create a simple HTML content for PDF export
+    const stats = getDailyStats();
+    const reportTitle = reportType === 'daily' 
+      ? `Daily Report - ${format(dateRange.from, 'MMM dd, yyyy')}`
+      : `Report - ${format(dateRange.from, 'MMM dd, yyyy')} to ${format(dateRange.to, 'MMM dd, yyyy')}`;
+
+    // Create a comprehensive HTML content for PDF export
     const htmlContent = `
       <html>
         <head>
@@ -71,13 +111,41 @@ const ReportsExport = () => {
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
             th { background-color: #f2f2f2; }
             .header { text-align: center; margin-bottom: 20px; }
+            .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 20px 0; }
+            .stat-card { border: 1px solid #ddd; padding: 15px; text-align: center; }
+            .stat-value { font-size: 24px; font-weight: bold; color: #333; }
+            .stat-label { font-size: 12px; color: #666; margin-top: 5px; }
           </style>
         </head>
         <body>
           <div class="header">
             <h1>GuestFlow Hotel Management Report</h1>
-            <p>Period: ${format(dateRange.from, 'MMM dd, yyyy')} - ${format(dateRange.to, 'MMM dd, yyyy')}</p>
+            <h2>${reportTitle}</h2>
           </div>
+          
+          <div class="stats">
+            <div class="stat-card">
+              <div class="stat-value">${stats.totalBookings}</div>
+              <div class="stat-label">Total Bookings</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">₹${stats.totalRevenue.toLocaleString()}</div>
+              <div class="stat-label">Total Revenue</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">₹${stats.totalAdvance.toLocaleString()}</div>
+              <div class="stat-label">Total Advance</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">₹${stats.totalPending.toLocaleString()}</div>
+              <div class="stat-label">Pending Payment</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">${stats.totalGuests}</div>
+              <div class="stat-label">Total Guests</div>
+            </div>
+          </div>
+          
           <table>
             <thead>
               <tr>
@@ -89,6 +157,7 @@ const ReportsExport = () => {
                 <th>Total Fare</th>
                 <th>Advance</th>
                 <th>Remaining</th>
+                <th>Guests</th>
               </tr>
             </thead>
             <tbody>
@@ -102,6 +171,7 @@ const ReportsExport = () => {
                   <td>₹${booking.farePerNight}</td>
                   <td>₹${booking.advancePayment}</td>
                   <td>₹${booking.remainingPayment}</td>
+                  <td>${booking.totalGuests}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -115,7 +185,7 @@ const ReportsExport = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `guestflow-report-${format(new Date(), 'yyyy-MM-dd')}.html`;
+    a.download = `guestflow-${reportType}-report-${format(new Date(), 'yyyy-MM-dd')}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -182,7 +252,7 @@ const ReportsExport = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `guestflow-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.download = `guestflow-${reportType}-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -194,6 +264,8 @@ const ReportsExport = () => {
     });
   };
 
+  const stats = getDailyStats();
+
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold">Reports & Export</h2>
@@ -202,97 +274,157 @@ const ReportsExport = () => {
         {/* Date Selection */}
         <Card>
           <CardHeader>
-            <CardTitle>Select Date Range</CardTitle>
+            <CardTitle>Select Report Type & Date Range</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label>Quick Select</Label>
+              <Label>Report Type</Label>
               <div className="grid grid-cols-2 gap-2 mt-2">
                 <Button
-                  variant={selectedPeriod === '1month' ? 'default' : 'outline'}
+                  variant={selectedPeriod === 'daily' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setPredefinedPeriod('1month')}
+                  onClick={() => setPredefinedPeriod('daily')}
                 >
-                  1 Month
+                  Daily Report
                 </Button>
                 <Button
-                  variant={selectedPeriod === '2months' ? 'default' : 'outline'}
+                  variant={reportType === 'range' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setPredefinedPeriod('2months')}
+                  onClick={() => {
+                    setReportType('range');
+                    setSelectedPeriod('custom');
+                  }}
                 >
-                  2 Months
-                </Button>
-                <Button
-                  variant={selectedPeriod === '6months' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setPredefinedPeriod('6months')}
-                >
-                  6 Months
-                </Button>
-                <Button
-                  variant={selectedPeriod === '1year' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setPredefinedPeriod('1year')}
-                >
-                  1 Year
+                  Date Range
                 </Button>
               </div>
             </div>
 
+            {reportType === 'range' && (
+              <div>
+                <Label>Quick Select</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <Button
+                    variant={selectedPeriod === '1month' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPredefinedPeriod('1month')}
+                  >
+                    1 Month
+                  </Button>
+                  <Button
+                    variant={selectedPeriod === '2months' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPredefinedPeriod('2months')}
+                  >
+                    2 Months
+                  </Button>
+                  <Button
+                    variant={selectedPeriod === '6months' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPredefinedPeriod('6months')}
+                  >
+                    6 Months
+                  </Button>
+                  <Button
+                    variant={selectedPeriod === '1year' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPredefinedPeriod('1year')}
+                  >
+                    1 Year
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div>
-              <Label>Custom Date Range</Label>
-              <div className="grid grid-cols-2 gap-4 mt-2">
-                <div>
-                  <Label className="text-sm">From Date</Label>
-                  <Calendar
-                    mode="single"
-                    selected={dateRange.from}
-                    onSelect={(date) => {
-                      if (date) {
-                        setDateRange(prev => ({ ...prev, from: date }));
-                        setSelectedPeriod('custom');
-                      }
-                    }}
-                    className="rounded-md border"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm">To Date</Label>
-                  <Calendar
-                    mode="single"
-                    selected={dateRange.to}
-                    onSelect={(date) => {
-                      if (date) {
-                        setDateRange(prev => ({ ...prev, to: date }));
-                        setSelectedPeriod('custom');
-                      }
-                    }}
-                    className="rounded-md border"
-                  />
-                </div>
+              <Label>Date Selection</Label>
+              <div className="grid grid-cols-1 gap-4 mt-2">
+                {reportType === 'daily' ? (
+                  <div>
+                    <Label className="text-sm">Select Date</Label>
+                    <Calendar
+                      mode="single"
+                      selected={dateRange.from}
+                      onSelect={(date) => {
+                        if (date) {
+                          setDateRange({ from: date, to: date });
+                        }
+                      }}
+                      className="rounded-md border"
+                    />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm">From Date</Label>
+                      <Calendar
+                        mode="single"
+                        selected={dateRange.from}
+                        onSelect={(date) => {
+                          if (date) {
+                            setDateRange(prev => ({ ...prev, from: date }));
+                            setSelectedPeriod('custom');
+                          }
+                        }}
+                        className="rounded-md border"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm">To Date</Label>
+                      <Calendar
+                        mode="single"
+                        selected={dateRange.to}
+                        onSelect={(date) => {
+                          if (date) {
+                            setDateRange(prev => ({ ...prev, to: date }));
+                            setSelectedPeriod('custom');
+                          }
+                        }}
+                        className="rounded-md border"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Export Options */}
+        {/* Stats & Export */}
         <Card>
           <CardHeader>
-            <CardTitle>Export Data</CardTitle>
+            <CardTitle>
+              {reportType === 'daily' ? 'Daily Statistics' : 'Period Statistics'}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label>Selected Period</Label>
               <p className="text-sm text-muted-foreground">
-                {format(dateRange.from, 'MMM dd, yyyy')} - {format(dateRange.to, 'MMM dd, yyyy')}
+                {reportType === 'daily' 
+                  ? format(dateRange.from, 'MMM dd, yyyy')
+                  : `${format(dateRange.from, 'MMM dd, yyyy')} - ${format(dateRange.to, 'MMM dd, yyyy')}`
+                }
               </p>
             </div>
 
-            <div>
-              <Label>Total Bookings</Label>
-              <p className="text-2xl font-bold text-primary">
-                {getFilteredBookings().length}
-              </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Total Bookings</Label>
+                <p className="text-2xl font-bold text-primary">{stats.totalBookings}</p>
+              </div>
+              <div>
+                <Label>Total Guests</Label>
+                <p className="text-2xl font-bold text-primary">{stats.totalGuests}</p>
+              </div>
+              <div>
+                <Label>Total Revenue</Label>
+                <p className="text-xl font-bold text-green-600">₹{stats.totalRevenue.toLocaleString()}</p>
+              </div>
+              <div>
+                <Label>Pending Amount</Label>
+                <p className="text-xl font-bold text-red-600">₹{stats.totalPending.toLocaleString()}</p>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -332,6 +464,7 @@ const ReportsExport = () => {
                   <th className="border border-gray-300 p-2 text-left">Check-in</th>
                   <th className="border border-gray-300 p-2 text-left">Check-out</th>
                   <th className="border border-gray-300 p-2 text-left">Amount</th>
+                  <th className="border border-gray-300 p-2 text-left">Guests</th>
                 </tr>
               </thead>
               <tbody>
@@ -349,6 +482,7 @@ const ReportsExport = () => {
                       {booking.checkOutDate} {booking.checkOutTime}
                     </td>
                     <td className="border border-gray-300 p-2">₹{booking.farePerNight}</td>
+                    <td className="border border-gray-300 p-2">{booking.totalGuests}</td>
                   </tr>
                 ))}
               </tbody>
@@ -357,6 +491,9 @@ const ReportsExport = () => {
               <p className="text-sm text-muted-foreground mt-2">
                 Showing first 10 records. Total: {getFilteredBookings().length}
               </p>
+            )}
+            {getFilteredBookings().length === 0 && (
+              <p className="text-center text-gray-500 py-4">No bookings found for selected period</p>
             )}
           </div>
         </CardContent>

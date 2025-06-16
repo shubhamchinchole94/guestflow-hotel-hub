@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +28,7 @@ import GuestRegistration from '@/components/GuestRegistration';
 import ReportsExport from '@/components/ReportsExport';
 import GuestList from '@/components/GuestList';
 import RevenueChart from '@/components/RevenueChart';
+import CompanyMaster from '@/components/CompanyMaster';
 
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -124,6 +124,7 @@ const Dashboard = () => {
     { id: 'guests', label: 'Guest List', icon: Users, roles: ['superadmin', 'user'] },
     { id: 'users', label: 'User Management', icon: User, roles: ['superadmin'] },
     { id: 'hotel', label: 'Hotel Registration', icon: Hotel, roles: ['superadmin'] },
+    { id: 'companies', label: 'Company Master', icon: Users, roles: ['superadmin'] },
     { id: 'reports', label: 'Reports & Export', icon: FileText, roles: ['superadmin'] }
   ];
 
@@ -286,6 +287,10 @@ const Dashboard = () => {
 
               {activeTab === 'hotel' && userRole === 'superadmin' && (
                 <HotelRegistration />
+              )}
+
+              {activeTab === 'companies' && userRole === 'superadmin' && (
+                <CompanyMaster />
               )}
 
               {activeTab === 'reports' && userRole === 'superadmin' && (
