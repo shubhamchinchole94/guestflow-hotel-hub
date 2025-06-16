@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { useGuestStore } from '@/store/guestStore';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Users } from 'lucide-react';
+import { AlertTriangle, Users, ArrowRight } from 'lucide-react';
 
 interface RoomGridProps {
   selectedDate: Date;
@@ -216,16 +216,30 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                       
                       {room.isOccupied && room.guest ? (
                         <div className="space-y-1">
-                          <div className="text-xs">
-                            {room.guest.primaryGuest.firstName} {room.guest.primaryGuest.lastName}
+                          <div className="text-xs text-blue-600 font-medium">
+                            Guest Checked In
                           </div>
                           <Button
                             variant="destructive"
                             size="sm"
-                            className="w-full text-xs"
+                            className="w-full text-xs mb-1"
                           >
                             View Details
                           </Button>
+                          {onRoomTransferOpen && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRoomTransferOpen(room.roomNumber);
+                              }}
+                            >
+                              <ArrowRight className="h-3 w-3 mr-1" />
+                              Transfer
+                            </Button>
+                          )}
                         </div>
                       ) : room.status === 'cleaning' ? (
                         <div className="space-y-1">
@@ -272,7 +286,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                                   onRoomTransferOpen(room.roomNumber);
                                 }}
                               >
-                                Transfer
+                                Transfer Here
                               </Button>
                             )}
                           </div>

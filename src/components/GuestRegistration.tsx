@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { useGuestStore } from '@/store/guestStore';
 import { format } from 'date-fns';
@@ -60,6 +61,8 @@ const GuestRegistration = () => {
   }>({});
   const [companies, setCompanies] = useState<any[]>([]);
   const [hotelConfig, setHotelConfig] = useState<any>({});
+  const [showBill, setShowBill] = useState(false);
+  const [billData, setBillData] = useState<any>(null);
 
   useEffect(() => {
     const savedCompanies = localStorage.getItem('companies');
@@ -277,6 +280,55 @@ const GuestRegistration = () => {
     }
   };
 
+  const generateBill = (bookingData: any) => {
+    const selectedCompany = companies.find(c => c.id === bookingData.companyId);
+    const extraBedCost = bookingData.extraBed ? bookingData.extraBedPrice : 0;
+    const mealCosts = (bookingData.mealPlan?.breakfast ? (hotelConfig.mealPrices?.breakfast || 0) : 0) +
+                      (bookingData.mealPlan?.lunch ? (hotelConfig.mealPrices?.lunch || 0) : 0) +
+                      (bookingData.mealPlan?.dinner ? (hotelConfig.mealPrices?.dinner || 0) : 0);
+    
+    const totalFare = bookingData.farePerNight + extraBedCost + mealCosts;
+    
+    let finalFare = totalFare;
+    let appliedDiscount = 0;
+    let gstRate = 0;
+    let gstAmount = 0;
+    
+    if (selectedCompany) {
+      appliedDiscount = (totalFare * selectedCompany.roomPriceDiscount) / 100;
+      finalFare = totalFare - appliedDiscount;
+      gstRate = selectedCompany.gstPercentage;
+      gstAmount = (finalFare * gstRate) / 100;
+    }
+
+    const bill = {
+      bookingId: bookingData.id,
+      guestName: `${bookingData.primaryGuest.firstName} ${bookingData.primaryGuest.lastName}`,
+      roomNumber: bookingData.roomNumber,
+      checkInDate: bookingData.checkInDate,
+      checkInTime: bookingData.checkInTime,
+      checkOutDate: bookingData.checkOutDate,
+      checkOutTime: bookingData.checkOutTime,
+      baseFare: bookingData.farePerNight,
+      extraBedCost,
+      mealCosts,
+      totalBeforeDiscount: totalFare,
+      discountAmount: appliedDiscount,
+      discountPercentage: selectedCompany?.roomPriceDiscount || 0,
+      finalFare,
+      gstRate,
+      gstAmount,
+      grandTotal: finalFare + gstAmount,
+      advancePayment: bookingData.advancePayment,
+      remainingPayment: (finalFare + gstAmount) - bookingData.advancePayment,
+      companyName: selectedCompany?.companyName || 'Walk-in Guest',
+      generatedAt: new Date().toISOString()
+    };
+
+    setBillData(bill);
+    setShowBill(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -371,17 +423,13 @@ const GuestRegistration = () => {
     const booking = bookings.find((b: any) => b.id === bookingId);
     
     if (booking) {
+      // Generate bill first
+      generateBill(booking);
+      
       // Set room to cleaning status
       const roomStatuses = JSON.parse(localStorage.getItem('roomStatuses') || '{}');
       roomStatuses[booking.roomNumber] = 'cleaning';
       localStorage.setItem('roomStatuses', JSON.stringify(roomStatuses));
-      
-      // Generate bill (this will be handled by BillGeneration component)
-      const billData = {
-        ...booking,
-        checkOutTime: new Date().toISOString()
-      };
-      localStorage.setItem('currentBill', JSON.stringify(billData));
       
       // Remove booking
       const updatedBookings = bookings.filter((b: any) => b.id !== bookingId);
@@ -724,63 +772,63 @@ const GuestRegistration = () => {
               <CardHeader>
                 <CardTitle className="text-lg">Additional Services</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 {/* Extra Bed */}
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+                <div className="flex items-center space-x-3">
+                  <Checkbox
                     id="extraBed"
                     checked={formData.extraBed}
-                    onChange={(e) => setFormData(prev => ({ ...prev, extraBed: e.target.checked }))}
-                    className="rounded border-gray-300"
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, extraBed: !!checked }))}
                   />
-                  <Label htmlFor="extraBed">Extra Bed (₹{formData.extraBedPrice})</Label>
+                  <Label htmlFor="extraBed" className="text-sm font-medium">
+                    Extra Bed (₹{formData.extraBedPrice})
+                  </Label>
                 </div>
 
                 {/* Meal Plan */}
-                <div className="space-y-2">
-                  <Label>Meal Plan</Label>
-                  <div className="flex space-x-4">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Meal Plan</Label>
+                  <div className="flex flex-col space-y-3">
                     {hotelConfig.mealPrices && (
                       <>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
                             id="breakfast"
                             checked={formData.mealPlan.breakfast}
-                            onChange={(e) => setFormData(prev => ({
+                            onCheckedChange={(checked) => setFormData(prev => ({
                               ...prev,
-                              mealPlan: { ...prev.mealPlan, breakfast: e.target.checked }
+                              mealPlan: { ...prev.mealPlan, breakfast: !!checked }
                             }))}
-                            className="rounded border-gray-300"
                           />
-                          <Label htmlFor="breakfast">Breakfast (₹{hotelConfig.mealPrices.breakfast})</Label>
+                          <Label htmlFor="breakfast" className="text-sm font-medium">
+                            Breakfast (₹{hotelConfig.mealPrices.breakfast})
+                          </Label>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
                             id="lunch"
                             checked={formData.mealPlan.lunch}
-                            onChange={(e) => setFormData(prev => ({
+                            onCheckedChange={(checked) => setFormData(prev => ({
                               ...prev,
-                              mealPlan: { ...prev.mealPlan, lunch: e.target.checked }
+                              mealPlan: { ...prev.mealPlan, lunch: !!checked }
                             }))}
-                            className="rounded border-gray-300"
                           />
-                          <Label htmlFor="lunch">Lunch (₹{hotelConfig.mealPrices.lunch})</Label>
+                          <Label htmlFor="lunch" className="text-sm font-medium">
+                            Lunch (₹{hotelConfig.mealPrices.lunch})
+                          </Label>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
                             id="dinner"
                             checked={formData.mealPlan.dinner}
-                            onChange={(e) => setFormData(prev => ({
+                            onCheckedChange={(checked) => setFormData(prev => ({
                               ...prev,
-                              mealPlan: { ...prev.mealPlan, dinner: e.target.checked }
+                              mealPlan: { ...prev.mealPlan, dinner: !!checked }
                             }))}
-                            className="rounded border-gray-300"
                           />
-                          <Label htmlFor="dinner">Dinner (₹{hotelConfig.mealPrices.dinner})</Label>
+                          <Label htmlFor="dinner" className="text-sm font-medium">
+                            Dinner (₹{hotelConfig.mealPrices.dinner})
+                          </Label>
                         </div>
                       </>
                     )}
@@ -1071,6 +1119,115 @@ const GuestRegistration = () => {
                 </Button>
               </div>
             </div>}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bill Modal */}
+      <Dialog open={showBill} onOpenChange={setShowBill}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Guest Bill</DialogTitle>
+          </DialogHeader>
+          
+          {billData && (
+            <div className="space-y-4">
+              <div className="text-center border-b pb-4">
+                <h2 className="text-xl font-bold">Hotel Bill</h2>
+                <p className="text-sm text-gray-600">Bill ID: #{billData.bookingId}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Guest Name</Label>
+                  <p className="font-medium">{billData.guestName}</p>
+                </div>
+                <div>
+                  <Label>Room Number</Label>
+                  <p className="font-medium">{billData.roomNumber}</p>
+                </div>
+                <div>
+                  <Label>Check-in</Label>
+                  <p className="text-sm">{billData.checkInDate} {billData.checkInTime}</p>
+                </div>
+                <div>
+                  <Label>Check-out</Label>
+                  <p className="text-sm">{billData.checkOutDate} {billData.checkOutTime}</p>
+                </div>
+                <div>
+                  <Label>Company</Label>
+                  <p className="text-sm">{billData.companyName}</p>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-2">Billing Details</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Room Charges:</span>
+                    <span>₹{billData.baseFare}</span>
+                  </div>
+                  {billData.extraBedCost > 0 && (
+                    <div className="flex justify-between">
+                      <span>Extra Bed:</span>
+                      <span>₹{billData.extraBedCost}</span>
+                    </div>
+                  )}
+                  {billData.mealCosts > 0 && (
+                    <div className="flex justify-between">
+                      <span>Meals:</span>
+                      <span>₹{billData.mealCosts}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>₹{billData.totalBeforeDiscount}</span>
+                  </div>
+                  {billData.discountAmount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Discount ({billData.discountPercentage}%):</span>
+                      <span>-₹{billData.discountAmount}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Amount after discount:</span>
+                    <span>₹{billData.finalFare}</span>
+                  </div>
+                  {billData.gstAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span>GST ({billData.gstRate}%):</span>
+                      <span>₹{billData.gstAmount}</span>
+                    </div>
+                  )}
+                  <hr />
+                  <div className="flex justify-between font-bold">
+                    <span>Total Amount:</span>
+                    <span>₹{billData.grandTotal}</span>
+                  </div>
+                  <div className="flex justify-between text-green-600">
+                    <span>Advance Paid:</span>
+                    <span>₹{billData.advancePayment}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-red-600">
+                    <span>Amount Due:</span>
+                    <span>₹{billData.remainingPayment}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center text-xs text-gray-500 border-t pt-2">
+                Generated on: {new Date(billData.generatedAt).toLocaleString()}
+              </div>
+
+              <div className="flex justify-center space-x-4">
+                <Button variant="outline" onClick={() => setShowBill(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => window.print()}>
+                  Print Bill
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

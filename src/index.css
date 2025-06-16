@@ -96,13 +96,13 @@
   }
 }
 
-/* Form spacing improvements */
+/* Improved form spacing and alignment */
 .form-group {
   @apply space-y-2;
 }
 
 .form-group label {
-  @apply block text-sm font-medium mb-2;
+  @apply block text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
 }
 
 .form-group input,
@@ -116,20 +116,100 @@ form > div {
   @apply space-y-4;
 }
 
-/* Form field spacing */
+/* Form field spacing - improved alignment */
 form .space-y-2 > label {
-  @apply mb-2;
+  @apply mb-2 block;
 }
 
 form .space-y-2 > input,
 form .space-y-2 > select,
 form .space-y-2 > textarea {
-  @apply mt-0;
+  @apply mt-2;
 }
 
-/* Button alignment in forms */
-form .flex.justify-center {
-  @apply pt-4;
+/* Button alignment in forms - consistent spacing */
+form .flex.justify-center,
+form .flex.justify-end {
+  @apply pt-6 mt-6;
+}
+
+form .flex.space-x-4 > button,
+form .flex.space-x-2 > button {
+  @apply px-6 py-2 min-w-[120px];
+}
+
+/* Card content padding consistency */
+.card-content {
+  @apply p-6;
+}
+
+/* Grid alignment improvements */
+.grid.gap-4 {
+  @apply gap-4;
+}
+
+.grid.gap-6 {
+  @apply gap-6;
+}
+
+/* Input and select consistent height */
+input[type="text"],
+input[type="email"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+  @apply h-10 min-h-10;
+}
+
+textarea {
+  @apply min-h-20 resize-y;
+}
+
+/* Checkbox and label alignment */
+.checkbox-wrapper {
+  @apply flex items-center space-x-3;
+}
+
+.checkbox-wrapper label {
+  @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-0;
+}
+
+/* Table improvements */
+table {
+  @apply w-full border-collapse;
+}
+
+table th,
+table td {
+  @apply px-3 py-2 text-left align-top;
+}
+
+table th {
+  @apply font-semibold bg-muted/50;
+}
+
+table tbody tr:hover {
+  @apply bg-muted/25;
+}
+
+/* Modal and dialog improvements */
+.dialog-content {
+  @apply max-w-4xl;
+}
+
+.dialog-header {
+  @apply pb-4 border-b;
+}
+
+/* Button group spacing */
+.button-group {
+  @apply flex space-x-3 justify-center pt-6;
+}
+
+.button-group button {
+  @apply min-w-[120px];
 }
 
 /* Custom scrollbar */
@@ -148,4 +228,47 @@ form .flex.justify-center {
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary) / 0.8);
+}
+
+/* Improved spacing for specific components */
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+.space-y-3 > * + * {
+  margin-top: 0.75rem;
+}
+
+.space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+/* Card header improvements */
+.card-header {
+  @apply pb-3;
+}
+
+.card-title {
+  @apply text-lg font-semibold leading-none tracking-tight;
+}
+
+/* Better flex alignment */
+.flex.items-center {
+  align-items: center;
+}
+
+.flex.justify-between {
+  justify-content: space-between;
+}
+
+.flex.justify-center {
+  justify-content: center;
+}
+
+.flex.justify-end {
+  justify-content: flex-end;
 }

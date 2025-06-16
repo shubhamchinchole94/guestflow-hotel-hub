@@ -4,7 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -15,38 +17,54 @@ interface BulkBookingProps {
 }
 
 const BulkBooking = ({ isOpen, onClose, selectedDate }: BulkBookingProps) => {
-  const [formData, setFormData] = useState({
-    guestName: '',
-    mobile: '',
-    email: '',
-    numberOfRooms: 1,
-    checkInDate: '',
-    checkOutDate: '',
-    farePerRoom: 1000,
-    advancePayment: 0,
-    companyId: '',
-    remarks: ''
-  });
   const [availableRooms, setAvailableRooms] = useState<string[]>([]);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
+  const [hotelConfig, setHotelConfig] = useState<any>({});
+  
+  const [formData, setFormData] = useState({
+    primaryGuest: {
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      dob: '',
+      mobile: '',
+      address: '',
+      identityProof: '',
+      identityNumber: ''
+    },
+    checkInTime: '',
+    checkOutTime: '',
+    checkInDate: '',
+    checkOutDate: '',
+    stayDuration: '12hr',
+    farePerNight: 1000,
+    advancePayment: 0,
+    companyId: '',
+    extraBed: false,
+    mealPlan: {
+      breakfast: false,
+      lunch: false,
+      dinner: false
+    },
+    wakeUpCall: '',
+    wakeUpCallTime: '',
+    notes: ''
+  });
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(prev => ({
-        ...prev,
-        checkInDate: format(selectedDate, 'yyyy-MM-dd'),
-        checkOutDate: format(new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
-      }));
       loadAvailableRooms();
       loadCompanies();
+      loadHotelConfig();
+      initializeDates();
     }
   }, [isOpen, selectedDate]);
 
   const loadAvailableRooms = () => {
-    const hotelConfig = JSON.parse(localStorage.getItem('hotelConfig') || '{}');
     const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
     const roomStatuses = JSON.parse(localStorage.getItem('roomStatuses') || '{}');
+    const hotelConfig = JSON.parse(localStorage.getItem('hotelConfig') || '{}');
     
     const allRooms: string[] = [];
     if (hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
@@ -57,21 +75,18 @@ const BulkBooking = ({ isOpen, onClose, selectedDate }: BulkBookingProps) => {
         }
       }
     }
-
-    // Filter out occupied and out-of-order rooms
+    
     const available = allRooms.filter(roomNumber => {
       const isOccupied = bookings.some((booking: any) => {
         const checkIn = new Date(booking.checkInDate);
         const checkOut = new Date(booking.checkOutDate);
         return booking.roomNumber === roomNumber && 
-               selectedDate >= checkIn && 
-               selectedDate <= checkOut;
+               selectedDate >= checkIn && selectedDate <= checkOut;
       });
-      
       const status = roomStatuses[roomNumber];
-      return !isOccupied && status !== 'out-of-order';
+      return !isOccupied && status !== 'out-of-order' && status !== 'cleaning';
     });
-
+    
     setAvailableRooms(available);
   };
 
@@ -82,176 +97,218 @@ const BulkBooking = ({ isOpen, onClose, selectedDate }: BulkBookingProps) => {
     }
   };
 
-  const handleRoomSelection = (roomNumber: string, checked: boolean) => {
-    if (checked) {
-      if (selectedRooms.length < formData.numberOfRooms) {
-        setSelectedRooms(prev => [...prev, roomNumber]);
-      } else {
-        toast({
-          title: "Room Limit Reached",
-          description: `You can only select ${formData.numberOfRooms} rooms`,
-          variant: "destructive"
-        });
-      }
-    } else {
-      setSelectedRooms(prev => prev.filter(room => room !== roomNumber));
+  const loadHotelConfig = () => {
+    const savedConfig = localStorage.getItem('hotelConfig');
+    if (savedConfig) {
+      setHotelConfig(JSON.parse(savedConfig));
     }
+  };
+
+  const initializeDates = () => {
+    const checkInDate = format(selectedDate, 'yyyy-MM-dd');
+    const checkInTime = format(new Date(), 'HH:mm');
+    let checkOutDate = checkInDate;
+    let checkOutTime = checkInTime;
+
+    if (formData.stayDuration === '12hr') {
+      checkOutTime = '12:00';
+      const nextDay = new Date(selectedDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      checkOutDate = format(nextDay, 'yyyy-MM-dd');
+    } else {
+      const checkOutDateTime = new Date(selectedDate);
+      checkOutDateTime.setHours(checkOutDateTime.getHours() + 24);
+      checkOutDate = format(checkOutDateTime, 'yyyy-MM-dd');
+      checkOutTime = checkInTime;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      checkInDate,
+      checkInTime,
+      checkOutDate,
+      checkOutTime
+    }));
+  };
+
+  const toggleRoomSelection = (roomNumber: string) => {
+    setSelectedRooms(prev => 
+      prev.includes(roomNumber) 
+        ? prev.filter(r => r !== roomNumber)
+        : [...prev, roomNumber]
+    );
+  };
+
+  const calculateMealCosts = () => {
+    let total = 0;
+    if (formData.mealPlan.breakfast && hotelConfig.mealPrices?.breakfast) {
+      total += hotelConfig.mealPrices.breakfast;
+    }
+    if (formData.mealPlan.lunch && hotelConfig.mealPrices?.lunch) {
+      total += hotelConfig.mealPrices.lunch;
+    }
+    if (formData.mealPlan.dinner && hotelConfig.mealPrices?.dinner) {
+      total += hotelConfig.mealPrices.dinner;
+    }
+    return total;
+  };
+
+  const calculateTotalAmount = () => {
+    const extraBedCost = formData.extraBed ? (hotelConfig.extraBedPrice || 0) : 0;
+    const mealCosts = calculateMealCosts();
+    const baseAmount = (formData.farePerNight + extraBedCost + mealCosts) * selectedRooms.length;
+    
+    // Apply company discount if selected
+    let finalAmount = baseAmount;
+    if (formData.companyId) {
+      const selectedCompany = companies.find(c => c.id === formData.companyId);
+      if (selectedCompany) {
+        const discount = (baseAmount * selectedCompany.roomPriceDiscount) / 100;
+        finalAmount = baseAmount - discount;
+      }
+    }
+    
+    return { baseAmount, finalAmount };
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (selectedRooms.length !== formData.numberOfRooms) {
+    if (selectedRooms.length === 0) {
       toast({
-        title: "Room Selection Error",
-        description: `Please select exactly ${formData.numberOfRooms} rooms`,
+        title: "No Rooms Selected",
+        description: "Please select at least one room for booking",
         variant: "destructive"
       });
       return;
     }
 
     const selectedCompany = companies.find(c => c.id === formData.companyId);
-    let totalAmount = formData.farePerRoom * formData.numberOfRooms;
+    const { finalAmount } = calculateTotalAmount();
     
-    if (selectedCompany) {
-      const discount = (totalAmount * selectedCompany.roomPriceDiscount) / 100;
-      totalAmount = totalAmount - discount;
-    }
-
-    const bulkBooking = {
-      id: Date.now(),
-      type: 'bulk',
-      guestName: formData.guestName,
-      mobile: formData.mobile,
-      email: formData.email,
-      rooms: selectedRooms,
-      numberOfRooms: formData.numberOfRooms,
-      checkInDate: formData.checkInDate,
-      checkOutDate: formData.checkOutDate,
-      farePerRoom: formData.farePerRoom,
-      totalAmount,
-      advancePayment: formData.advancePayment,
-      remainingPayment: totalAmount - formData.advancePayment,
-      companyDetails: selectedCompany,
-      remarks: formData.remarks,
-      createdAt: new Date().toISOString()
-    };
-
-    // Create individual bookings for each room
     const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
     
-    selectedRooms.forEach((roomNumber, index) => {
-      const roomBooking = {
-        id: Date.now() + index,
+    selectedRooms.forEach(roomNumber => {
+      const booking = {
+        id: Date.now() + Math.random(),
         roomNumber,
-        primaryGuest: {
-          firstName: formData.guestName.split(' ')[0] || formData.guestName,
-          lastName: formData.guestName.split(' ').slice(1).join(' ') || '',
-          mobile: formData.mobile,
-          email: formData.email,
-          address: 'Bulk booking - details to be updated',
-          identityProof: 'bulk',
-          identityNumber: 'BULK' + Date.now()
-        },
-        familyMembers: [],
-        checkInDate: formData.checkInDate,
-        checkOutDate: formData.checkOutDate,
-        checkInTime: '14:00',
-        checkOutTime: '12:00',
-        farePerNight: formData.farePerRoom,
-        advancePayment: Math.floor(formData.advancePayment / formData.numberOfRooms),
-        remainingPayment: Math.floor((totalAmount - formData.advancePayment) / formData.numberOfRooms),
-        companyDetails: selectedCompany,
-        isBulkBooking: true,
-        bulkBookingId: bulkBooking.id,
-        remarks: formData.remarks,
+        ...formData,
         totalGuests: 1,
-        createdAt: new Date().toISOString()
+        remainingPayment: Math.max(0, finalAmount / selectedRooms.length - formData.advancePayment),
+        createdAt: new Date().toISOString(),
+        companyDetails: selectedCompany,
+        billing: {
+          baseFare: formData.farePerNight,
+          extraBedCost: formData.extraBed ? (hotelConfig.extraBedPrice || 0) : 0,
+          mealCosts: calculateMealCosts(),
+          totalBeforeDiscount: formData.farePerNight + (formData.extraBed ? (hotelConfig.extraBedPrice || 0) : 0) + calculateMealCosts(),
+          discountAmount: selectedCompany ? ((formData.farePerNight + (formData.extraBed ? (hotelConfig.extraBedPrice || 0) : 0) + calculateMealCosts()) * selectedCompany.roomPriceDiscount) / 100 : 0,
+          discountPercentage: selectedCompany?.roomPriceDiscount || 0,
+          finalFare: finalAmount / selectedRooms.length,
+          gstRate: selectedCompany?.gstPercentage || 0,
+          gstAmount: selectedCompany ? ((finalAmount / selectedRooms.length) * selectedCompany.gstPercentage) / 100 : 0,
+          grandTotal: selectedCompany ? (finalAmount / selectedRooms.length) + (((finalAmount / selectedRooms.length) * selectedCompany.gstPercentage) / 100) : finalAmount / selectedRooms.length
+        },
+        isBulkBooking: true,
+        bulkBookingRooms: selectedRooms
       };
       
-      bookings.push(roomBooking);
+      bookings.push(booking);
     });
-
+    
     localStorage.setItem('bookings', JSON.stringify(bookings));
     
-    // Save bulk booking record
-    const bulkBookings = JSON.parse(localStorage.getItem('bulkBookings') || '[]');
-    bulkBookings.push(bulkBooking);
-    localStorage.setItem('bulkBookings', JSON.stringify(bulkBookings));
-
     toast({
-      title: "Bulk Booking Successful",
-      description: `${formData.numberOfRooms} rooms booked successfully`
+      title: "Bulk Booking Confirmed",
+      description: `${selectedRooms.length} rooms booked successfully for ${formData.primaryGuest.firstName} ${formData.primaryGuest.lastName}`
     });
-
+    
     onClose();
-    window.dispatchEvent(new CustomEvent('refreshDashboard'));
     resetForm();
+    window.dispatchEvent(new CustomEvent('refreshDashboard'));
   };
 
   const resetForm = () => {
+    setSelectedRooms([]);
     setFormData({
-      guestName: '',
-      mobile: '',
-      email: '',
-      numberOfRooms: 1,
+      primaryGuest: {
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        dob: '',
+        mobile: '',
+        address: '',
+        identityProof: '',
+        identityNumber: ''
+      },
+      checkInTime: '',
+      checkOutTime: '',
       checkInDate: '',
       checkOutDate: '',
-      farePerRoom: 1000,
+      stayDuration: '12hr',
+      farePerNight: 1000,
       advancePayment: 0,
       companyId: '',
-      remarks: ''
+      extraBed: false,
+      mealPlan: {
+        breakfast: false,
+        lunch: false,
+        dinner: false
+      },
+      wakeUpCall: '',
+      wakeUpCallTime: '',
+      notes: ''
     });
-    setSelectedRooms([]);
   };
 
-  const totalAmount = formData.farePerRoom * formData.numberOfRooms;
-  const selectedCompany = companies.find(c => c.id === formData.companyId);
-  const discountAmount = selectedCompany ? (totalAmount * selectedCompany.roomPriceDiscount) / 100 : 0;
-  const finalAmount = totalAmount - discountAmount;
+  const { baseAmount, finalAmount } = calculateTotalAmount();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Bulk Room Booking</DialogTitle>
+          <DialogTitle>Bulk Room Booking - {format(selectedDate, 'EEEE, MMMM d, yyyy')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Room Selection */}
           <Card>
             <CardHeader>
-              <CardTitle>Guest Information</CardTitle>
+              <CardTitle>Select Rooms ({selectedRooms.length} selected)</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Primary Guest Name</Label>
-                  <Input
-                    value={formData.guestName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, guestName: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Mobile Number</Label>
-                  <Input
-                    value={formData.mobile}
-                    onChange={(e) => setFormData(prev => ({ ...prev, mobile: e.target.value }))}
-                    maxLength={10}
-                    required
-                  />
-                </div>
+            <CardContent>
+              <div className="grid grid-cols-4 gap-3">
+                {availableRooms.map(roomNumber => (
+                  <div
+                    key={roomNumber}
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                      selectedRooms.includes(roomNumber)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'border-gray-300 hover:border-primary'
+                    }`}
+                    onClick={() => toggleRoomSelection(roomNumber)}
+                  >
+                    <div className="text-center">
+                      <div className="font-bold">Room {roomNumber}</div>
+                      <div className="text-xs">₹{formData.farePerNight}/night</div>
+                    </div>
+                  </div>
+                ))}
               </div>
+              {availableRooms.length === 0 && (
+                <p className="text-center text-gray-500 py-4">No rooms available for selected date</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Company Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Company / Marketplace</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-2">
-                <Label>Email (Optional)</Label>
-                <Input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Company (Optional)</Label>
+                <Label>Select Company (Optional)</Label>
                 <select
                   value={formData.companyId}
                   onChange={(e) => setFormData(prev => ({ ...prev, companyId: e.target.value }))}
@@ -268,147 +325,295 @@ const BulkBooking = ({ isOpen, onClose, selectedDate }: BulkBookingProps) => {
             </CardContent>
           </Card>
 
+          {/* Primary Guest Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Booking Details</CardTitle>
+              <CardTitle>Primary Guest Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Number of Rooms</Label>
+                  <Label>First Name</Label>
                   <Input
-                    type="number"
-                    min="1"
-                    max={availableRooms.length}
-                    value={formData.numberOfRooms}
-                    onChange={(e) => {
-                      const newCount = parseInt(e.target.value);
-                      setFormData(prev => ({ ...prev, numberOfRooms: newCount }));
-                      setSelectedRooms(prev => prev.slice(0, newCount));
-                    }}
+                    value={formData.primaryGuest.firstName}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      primaryGuest: { ...prev.primaryGuest, firstName: e.target.value }
+                    }))}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Check-in Date</Label>
+                  <Label>Middle Name</Label>
                   <Input
-                    type="date"
-                    value={formData.checkInDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, checkInDate: e.target.value }))}
-                    required
+                    value={formData.primaryGuest.middleName}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      primaryGuest: { ...prev.primaryGuest, middleName: e.target.value }
+                    }))}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Check-out Date</Label>
+                  <Label>Last Name</Label>
                   <Input
-                    type="date"
-                    value={formData.checkOutDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, checkOutDate: e.target.value }))}
+                    value={formData.primaryGuest.lastName}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      primaryGuest: { ...prev.primaryGuest, lastName: e.target.value }
+                    }))}
                     required
                   />
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Fare per Room</Label>
+                  <Label>Date of Birth</Label>
                   <Input
-                    type="number"
-                    value={formData.farePerRoom}
-                    onChange={(e) => setFormData(prev => ({ ...prev, farePerRoom: parseInt(e.target.value) }))}
+                    type="date"
+                    value={formData.primaryGuest.dob}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      primaryGuest: { ...prev.primaryGuest, dob: e.target.value }
+                    }))}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Advance Payment</Label>
+                  <Label>Mobile Number</Label>
                   <Input
-                    type="number"
-                    value={formData.advancePayment}
-                    onChange={(e) => setFormData(prev => ({ ...prev, advancePayment: parseInt(e.target.value) || 0 }))}
-                    min="0"
-                    max={finalAmount}
+                    value={formData.primaryGuest.mobile}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      primaryGuest: { ...prev.primaryGuest, mobile: e.target.value }
+                    }))}
+                    maxLength={10}
+                    required
                   />
                 </div>
               </div>
+
               <div className="space-y-2">
-                <Label>Remarks</Label>
+                <Label>Address</Label>
+                <Textarea
+                  value={formData.primaryGuest.address}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    primaryGuest: { ...prev.primaryGuest, address: e.target.value }
+                  }))}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Identity Proof Type</Label>
+                  <select
+                    value={formData.primaryGuest.identityProof}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      primaryGuest: { ...prev.primaryGuest, identityProof: e.target.value }
+                    }))}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                    required
+                  >
+                    <option value="">Select Identity Proof</option>
+                    <option value="aadhar">Aadhar Card</option>
+                    <option value="pan">PAN Card</option>
+                    <option value="passport">Passport</option>
+                    <option value="voter">Voter ID</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Identity Proof Number</Label>
+                  <Input
+                    value={formData.primaryGuest.identityNumber}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      primaryGuest: { ...prev.primaryGuest, identityNumber: e.target.value }
+                    }))}
+                    placeholder="Enter ID number"
+                    required
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Additional Services */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Additional Services</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Extra Bed */}
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="extraBed"
+                  checked={formData.extraBed}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, extraBed: !!checked }))}
+                />
+                <Label htmlFor="extraBed" className="text-sm font-medium">
+                  Extra Bed (₹{hotelConfig.extraBedPrice || 0} per room)
+                </Label>
+              </div>
+
+              {/* Meal Plan */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Meal Plan</Label>
+                <div className="flex flex-col space-y-3">
+                  {hotelConfig.mealPrices && (
+                    <>
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="breakfast"
+                          checked={formData.mealPlan.breakfast}
+                          onCheckedChange={(checked) => setFormData(prev => ({
+                            ...prev,
+                            mealPlan: { ...prev.mealPlan, breakfast: !!checked }
+                          }))}
+                        />
+                        <Label htmlFor="breakfast" className="text-sm font-medium">
+                          Breakfast (₹{hotelConfig.mealPrices.breakfast} per room)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="lunch"
+                          checked={formData.mealPlan.lunch}
+                          onCheckedChange={(checked) => setFormData(prev => ({
+                            ...prev,
+                            mealPlan: { ...prev.mealPlan, lunch: !!checked }
+                          }))}
+                        />
+                        <Label htmlFor="lunch" className="text-sm font-medium">
+                          Lunch (₹{hotelConfig.mealPrices.lunch} per room)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="dinner"
+                          checked={formData.mealPlan.dinner}
+                          onCheckedChange={(checked) => setFormData(prev => ({
+                            ...prev,
+                            mealPlan: { ...prev.mealPlan, dinner: !!checked }
+                          }))}
+                        />
+                        <Label htmlFor="dinner" className="text-sm font-medium">
+                          Dinner (₹{hotelConfig.mealPrices.dinner} per room)
+                        </Label>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Wake Up Call */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Wake Up Call Required</Label>
+                  <select
+                    value={formData.wakeUpCall}
+                    onChange={(e) => setFormData(prev => ({ ...prev, wakeUpCall: e.target.value }))}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  >
+                    <option value="">No Wake Up Call</option>
+                    <option value="yes">Yes, Set Wake Up Call</option>
+                  </select>
+                </div>
+                {formData.wakeUpCall === 'yes' && (
+                  <div className="space-y-2">
+                    <Label>Wake Up Time</Label>
+                    <Input
+                      type="time"
+                      value={formData.wakeUpCallTime}
+                      onChange={(e) => setFormData(prev => ({ ...prev, wakeUpCallTime: e.target.value }))}
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stay Duration & Payment */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Stay Duration & Payment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Duration Type</Label>
+                  <select
+                    value={formData.stayDuration}
+                    onChange={(e) => setFormData(prev => ({ ...prev, stayDuration: e.target.value }))}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  >
+                    <option value="12hr">12 Hours (Check-out at 12:00 PM next day)</option>
+                    <option value="24hr">24 Hours (From check-in time)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Base Room Fare (per room)</Label>
+                  <Input
+                    type="number"
+                    value={formData.farePerNight}
+                    onChange={(e) => setFormData(prev => ({ ...prev, farePerNight: parseInt(e.target.value) }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Billing Summary */}
+              <div className="bg-gray-50 p-4 rounded-lg mt-4">
+                <h4 className="font-semibold mb-2">Billing Summary ({selectedRooms.length} rooms)</h4>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Base Amount:</span>
+                    <span>₹{baseAmount}</span>
+                  </div>
+                  {formData.companyId && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Company Discount:</span>
+                      <span>-₹{baseAmount - finalAmount}</span>
+                    </div>
+                  )}
+                  <hr className="my-2" />
+                  <div className="flex justify-between font-semibold">
+                    <span>Total Amount:</span>
+                    <span>₹{finalAmount}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <Label>Advance Payment (₹)</Label>
                 <Input
-                  value={formData.remarks}
-                  onChange={(e) => setFormData(prev => ({ ...prev, remarks: e.target.value }))}
-                  placeholder="Any special requirements or notes"
+                  type="number"
+                  value={formData.advancePayment}
+                  onChange={(e) => setFormData(prev => ({ ...prev, advancePayment: parseInt(e.target.value) || 0 }))}
+                  min="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Notes / Special Requests</Label>
+                <Textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Any special requirements or notes..."
                 />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Select Rooms ({selectedRooms.length}/{formData.numberOfRooms})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto">
-                {availableRooms.map((roomNumber) => (
-                  <div key={roomNumber} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={roomNumber}
-                      checked={selectedRooms.includes(roomNumber)}
-                      onChange={(e) => handleRoomSelection(roomNumber, e.target.checked)}
-                      className="rounded border-gray-300"
-                    />
-                    <Label htmlFor={roomNumber} className="text-sm">
-                      Room {roomNumber}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-              {availableRooms.length === 0 && (
-                <p className="text-center text-gray-500 py-4">No rooms available for the selected date</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Billing Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Rooms ({formData.numberOfRooms} × ₹{formData.farePerRoom}):</span>
-                  <span>₹{totalAmount}</span>
-                </div>
-                {selectedCompany && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Company Discount ({selectedCompany.roomPriceDiscount}%):</span>
-                    <span>-₹{discountAmount}</span>
-                  </div>
-                )}
-                <hr />
-                <div className="flex justify-between font-semibold">
-                  <span>Total Amount:</span>
-                  <span>₹{finalAmount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Advance Payment:</span>
-                  <span>₹{formData.advancePayment}</span>
-                </div>
-                <div className="flex justify-between text-red-600 font-semibold">
-                  <span>Remaining Payment:</span>
-                  <span>₹{finalAmount - formData.advancePayment}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-center space-x-4">
+          <div className="flex justify-center space-x-4 pt-6">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              disabled={selectedRooms.length !== formData.numberOfRooms}
-            >
-              Confirm Bulk Booking
+            <Button type="submit" disabled={selectedRooms.length === 0}>
+              Confirm Bulk Booking ({selectedRooms.length} rooms)
             </Button>
           </div>
         </form>
