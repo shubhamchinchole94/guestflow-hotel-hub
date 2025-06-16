@@ -25,15 +25,10 @@ const HotelRegistration = () => {
       lunch: 300,
       dinner: 350
     },
-    amenities: {
-      wifi: false,
-      parking: false,
-      ac: false,
-      restaurant: false,
-      gym: false,
-      spa: false,
-      pool: false,
-      laundry: false
+    enabledMealPlans: {
+      breakfast: true,
+      lunch: true,
+      dinner: true
     }
   });
 
@@ -43,7 +38,15 @@ const HotelRegistration = () => {
     const savedConfig = localStorage.getItem('hotelConfig');
     if (savedConfig) {
       const config = JSON.parse(savedConfig);
-      setHotelConfig(prev => ({ ...prev, ...config }));
+      setHotelConfig(prev => ({ 
+        ...prev, 
+        ...config,
+        enabledMealPlans: config.enabledMealPlans || {
+          breakfast: true,
+          lunch: true,
+          dinner: true
+        }
+      }));
       if (config.logoUrl) {
         setLogoPreview(config.logoUrl);
       }
@@ -113,7 +116,7 @@ const HotelRegistration = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="form-group">
                 <Label htmlFor="hotelName">Hotel Name</Label>
                 <Input
                   id="hotelName"
@@ -122,7 +125,7 @@ const HotelRegistration = () => {
                   required
                 />
               </div>
-              <div className="space-y-2">
+              <div className="form-group">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
                   id="phone"
@@ -131,7 +134,7 @@ const HotelRegistration = () => {
                   required
                 />
               </div>
-              <div className="space-y-2">
+              <div className="form-group">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -141,7 +144,7 @@ const HotelRegistration = () => {
                   required
                 />
               </div>
-              <div className="space-y-2">
+              <div className="form-group">
                 <Label htmlFor="gstNumber">GST Number</Label>
                 <Input
                   id="gstNumber"
@@ -151,7 +154,7 @@ const HotelRegistration = () => {
               </div>
             </div>
             
-            <div className="space-y-2">
+            <div className="form-group">
               <Label htmlFor="address">Address</Label>
               <Input
                 id="address"
@@ -219,7 +222,7 @@ const HotelRegistration = () => {
               {/* Property Details Section */}
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label htmlFor="totalFloors">Total Floors</Label>
                     <Input
                       id="totalFloors"
@@ -230,7 +233,7 @@ const HotelRegistration = () => {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label htmlFor="roomsPerFloor">Rooms per Floor</Label>
                     <Input
                       id="roomsPerFloor"
@@ -243,7 +246,7 @@ const HotelRegistration = () => {
                   </div>
                 </div>
                 
-                <div className="space-y-2">
+                <div className="form-group">
                   <Label htmlFor="extraBedPrice">Extra Bed Price (₹)</Label>
                   <Input
                     id="extraBedPrice"
@@ -304,85 +307,112 @@ const HotelRegistration = () => {
           </CardContent>
         </Card>
 
-        {/* Meal Pricing */}
+        {/* Meal Plans */}
         <Card>
           <CardHeader>
-            <CardTitle>Meal Pricing</CardTitle>
+            <CardTitle>Meal Plans Configuration</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="breakfastPrice">Breakfast Price (₹)</Label>
-                <Input
-                  id="breakfastPrice"
-                  type="number"
-                  min="0"
-                  value={hotelConfig.mealPrices.breakfast}
-                  onChange={e => setHotelConfig(prev => ({
-                    ...prev,
-                    mealPrices: { ...prev.mealPrices, breakfast: parseInt(e.target.value) || 0 }
-                  }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lunchPrice">Lunch Price (₹)</Label>
-                <Input
-                  id="lunchPrice"
-                  type="number"
-                  min="0"
-                  value={hotelConfig.mealPrices.lunch}
-                  onChange={e => setHotelConfig(prev => ({
-                    ...prev,
-                    mealPrices: { ...prev.mealPrices, lunch: parseInt(e.target.value) || 0 }
-                  }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dinnerPrice">Dinner Price (₹)</Label>
-                <Input
-                  id="dinnerPrice"
-                  type="number"
-                  min="0"
-                  value={hotelConfig.mealPrices.dinner}
-                  onChange={e => setHotelConfig(prev => ({
-                    ...prev,
-                    mealPrices: { ...prev.mealPrices, dinner: parseInt(e.target.value) || 0 }
-                  }))}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Amenities */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Hotel Amenities</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(hotelConfig.amenities).map(([key, value]) => (
-                <div key={key} className="flex items-center space-x-3">
-                  <Checkbox
-                    id={key}
-                    checked={value}
-                    onCheckedChange={(checked) => setHotelConfig(prev => ({
-                      ...prev,
-                      amenities: { ...prev.amenities, [key]: !!checked }
-                    }))}
-                  />
-                  <Label htmlFor={key} className="text-sm font-medium capitalize">
-                    {key === 'wifi' ? 'Wi-Fi' : 
-                     key === 'ac' ? 'Air Conditioning' : 
-                     key.charAt(0).toUpperCase() + key.slice(1)}
-                  </Label>
+            <div className="space-y-6">
+              <div className="form-group">
+                <Label className="text-base font-medium mb-4 block">Enable Meal Plans (Select which meals to offer to guests)</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="checkbox-wrapper">
+                    <Checkbox
+                      id="enableBreakfast"
+                      checked={hotelConfig.enabledMealPlans.breakfast}
+                      onCheckedChange={(checked) => setHotelConfig(prev => ({
+                        ...prev,
+                        enabledMealPlans: { ...prev.enabledMealPlans, breakfast: !!checked }
+                      }))}
+                    />
+                    <Label htmlFor="enableBreakfast" className="text-sm font-medium">
+                      Enable Breakfast
+                    </Label>
+                  </div>
+                  
+                  <div className="checkbox-wrapper">
+                    <Checkbox
+                      id="enableLunch"
+                      checked={hotelConfig.enabledMealPlans.lunch}
+                      onCheckedChange={(checked) => setHotelConfig(prev => ({
+                        ...prev,
+                        enabledMealPlans: { ...prev.enabledMealPlans, lunch: !!checked }
+                      }))}
+                    />
+                    <Label htmlFor="enableLunch" className="text-sm font-medium">
+                      Enable Lunch
+                    </Label>
+                  </div>
+                  
+                  <div className="checkbox-wrapper">
+                    <Checkbox
+                      id="enableDinner"
+                      checked={hotelConfig.enabledMealPlans.dinner}
+                      onCheckedChange={(checked) => setHotelConfig(prev => ({
+                        ...prev,
+                        enabledMealPlans: { ...prev.enabledMealPlans, dinner: !!checked }
+                      }))}
+                    />
+                    <Label htmlFor="enableDinner" className="text-sm font-medium">
+                      Enable Dinner
+                    </Label>
+                  </div>
                 </div>
-              ))}
+              </div>
+
+              <div className="form-group">
+                <Label className="text-base font-medium mb-4 block">Meal Pricing</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="form-group">
+                    <Label htmlFor="breakfastPrice">Breakfast Price (₹)</Label>
+                    <Input
+                      id="breakfastPrice"
+                      type="number"
+                      min="0"
+                      value={hotelConfig.mealPrices.breakfast}
+                      onChange={e => setHotelConfig(prev => ({
+                        ...prev,
+                        mealPrices: { ...prev.mealPrices, breakfast: parseInt(e.target.value) || 0 }
+                      }))}
+                      disabled={!hotelConfig.enabledMealPlans.breakfast}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <Label htmlFor="lunchPrice">Lunch Price (₹)</Label>
+                    <Input
+                      id="lunchPrice"
+                      type="number"
+                      min="0"
+                      value={hotelConfig.mealPrices.lunch}
+                      onChange={e => setHotelConfig(prev => ({
+                        ...prev,
+                        mealPrices: { ...prev.mealPrices, lunch: parseInt(e.target.value) || 0 }
+                      }))}
+                      disabled={!hotelConfig.enabledMealPlans.lunch}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <Label htmlFor="dinnerPrice">Dinner Price (₹)</Label>
+                    <Input
+                      id="dinnerPrice"
+                      type="number"
+                      min="0"
+                      value={hotelConfig.mealPrices.dinner}
+                      onChange={e => setHotelConfig(prev => ({
+                        ...prev,
+                        mealPrices: { ...prev.mealPrices, dinner: parseInt(e.target.value) || 0 }
+                      }))}
+                      disabled={!hotelConfig.enabledMealPlans.dinner}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="flex justify-center">
+        <div className="button-group">
           <Button type="submit" size="lg">
             Save Hotel Configuration
           </Button>

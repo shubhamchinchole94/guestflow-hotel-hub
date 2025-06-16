@@ -96,51 +96,59 @@
   }
 }
 
-/* Improved form spacing and alignment */
+/* Form group base styles */
 .form-group {
-  @apply space-y-2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .form-group label {
-  @apply block text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  color: hsl(var(--foreground));
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  @apply w-full;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 2px);
+  background-color: hsl(var(--background));
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
 }
 
-/* Consistent spacing for all form elements */
-form > div {
-  @apply space-y-4;
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
 }
 
-/* Form field spacing - improved alignment */
-form .space-y-2 > label {
-  @apply mb-2 block;
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: hsl(var(--muted));
 }
 
-form .space-y-2 > input,
-form .space-y-2 > select,
-form .space-y-2 > textarea {
-  @apply mt-2;
-}
-
-/* Button alignment in forms - consistent spacing */
-form .flex.justify-center,
-form .flex.justify-end {
-  @apply pt-6 mt-6;
-}
-
-form .flex.space-x-4 > button,
-form .flex.space-x-2 > button {
-  @apply px-6 py-2 min-w-[120px];
+/* Textarea specific styling */
+.form-group textarea {
+  min-height: 5rem;
+  resize: vertical;
 }
 
 /* Card content padding consistency */
 .card-content {
-  @apply p-6;
+  padding: 1.5rem;
 }
 
 /* Input and select consistent height */
@@ -151,56 +159,104 @@ input[type="date"],
 input[type="time"],
 select,
 textarea {
-  @apply h-10 min-h-10;
+  min-height: 2.5rem;
 }
 
 textarea {
-  @apply min-h-20 resize-y;
+  min-height: 5rem;
+  resize: vertical;
 }
 
 /* Checkbox and label alignment */
 .checkbox-wrapper {
-  @apply flex items-center space-x-3;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .checkbox-wrapper label {
-  @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  color: hsl(var(--foreground));
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+/* Enhanced checkbox styling */
+.checkbox-wrapper input[type="checkbox"] {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.25rem;
+  background-color: hsl(var(--background));
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.checkbox-wrapper input[type="checkbox"]:checked {
+  background-color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+}
+
+.checkbox-wrapper input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: hsl(var(--primary-foreground));
+  font-size: 0.75rem;
+  font-weight: bold;
 }
 
 /* Table improvements */
 table {
-  @apply w-full border-collapse;
+  width: 100%;
+  border-collapse: collapse;
 }
 
 table th,
 table td {
-  @apply px-3 py-2 text-left align-top;
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 table th {
-  @apply font-semibold bg-muted/50;
+  font-weight: 600;
+  background-color: hsl(var(--muted) / 0.5);
 }
 
 table tbody tr:hover {
-  @apply bg-muted/25;
+  background-color: hsl(var(--muted) / 0.25);
 }
 
 /* Modal and dialog improvements */
 .dialog-content {
-  @apply max-w-4xl;
+  max-width: 64rem;
 }
 
 .dialog-header {
-  @apply pb-4 border-b;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 /* Button group spacing */
 .button-group {
-  @apply flex space-x-3 justify-center pt-6;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
 }
 
 .button-group button {
-  @apply min-w-[120px];
+  min-width: 7.5rem;
+  padding: 0.5rem 1.5rem;
 }
 
 /* Custom scrollbar */
@@ -221,7 +277,7 @@ table tbody tr:hover {
   background: hsl(var(--primary) / 0.8);
 }
 
-/* Improved spacing for specific components */
+/* Spacing utilities */
 .space-y-6 > * + * {
   margin-top: 1.5rem;
 }
@@ -240,11 +296,14 @@ table tbody tr:hover {
 
 /* Card header improvements */
 .card-header {
-  @apply pb-3;
+  padding-bottom: 0.75rem;
 }
 
 .card-title {
-  @apply text-lg font-semibold leading-none tracking-tight;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.025em;
 }
 
 /* Better flex alignment */
@@ -262,4 +321,72 @@ table tbody tr:hover {
 
 .flex.justify-end {
   justify-content: flex-end;
+}
+
+/* Grid improvements */
+.grid {
+  display: grid;
+}
+
+.grid.gap-4 {
+  gap: 1rem;
+}
+
+.grid.gap-6 {
+  gap: 1.5rem;
+}
+
+/* Responsive grid columns */
+.grid.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .grid.md\\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .grid.md\\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  
+  .grid.md\\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Form validation styles */
+.form-group input:invalid,
+.form-group select:invalid,
+.form-group textarea:invalid {
+  border-color: hsl(var(--destructive));
+}
+
+.form-group input:invalid:focus,
+.form-group select:invalid:focus,
+.form-group textarea:invalid:focus {
+  box-shadow: 0 0 0 2px hsl(var(--destructive) / 0.2);
+}
+
+/* Loading states */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Focus visible improvements */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break {
+    page-break-before: always;
+  }
 }

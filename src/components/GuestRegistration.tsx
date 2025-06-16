@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -137,13 +138,13 @@ const GuestRegistration = () => {
 
   const calculateMealCosts = () => {
     let total = 0;
-    if (formData.mealPlan.breakfast && hotelConfig.mealPrices?.breakfast) {
+    if (formData.mealPlan.breakfast && hotelConfig.mealPrices?.breakfast && hotelConfig.enabledMealPlans?.breakfast) {
       total += hotelConfig.mealPrices.breakfast;
     }
-    if (formData.mealPlan.lunch && hotelConfig.mealPrices?.lunch) {
+    if (formData.mealPlan.lunch && hotelConfig.mealPrices?.lunch && hotelConfig.enabledMealPlans?.lunch) {
       total += hotelConfig.mealPrices.lunch;
     }
-    if (formData.mealPlan.dinner && hotelConfig.mealPrices?.dinner) {
+    if (formData.mealPlan.dinner && hotelConfig.mealPrices?.dinner && hotelConfig.enabledMealPlans?.dinner) {
       total += hotelConfig.mealPrices.dinner;
     }
     return total;
@@ -372,6 +373,19 @@ const GuestRegistration = () => {
     bookings.push(booking);
     localStorage.setItem('bookings', JSON.stringify(bookings));
     
+    // Store wake up call if set
+    if (formData.wakeUpCall === 'yes' && formData.wakeUpCallTime) {
+      const wakeUpCalls = JSON.parse(localStorage.getItem('wakeUpCalls') || '[]');
+      wakeUpCalls.push({
+        roomNumber: selectedRoom,
+        time: formData.wakeUpCallTime,
+        date: formData.checkInDate,
+        guestName: `${formData.primaryGuest.firstName} ${formData.primaryGuest.lastName}`,
+        bookingId: booking.id
+      });
+      localStorage.setItem('wakeUpCalls', JSON.stringify(wakeUpCalls));
+    }
+    
     toast({
       title: "Booking Confirmed",
       description: `Room ${selectedRoom} booked successfully`
@@ -434,6 +448,11 @@ const GuestRegistration = () => {
       // Remove booking
       const updatedBookings = bookings.filter((b: any) => b.id !== bookingId);
       localStorage.setItem('bookings', JSON.stringify(updatedBookings));
+      
+      // Remove wake up call if exists
+      const wakeUpCalls = JSON.parse(localStorage.getItem('wakeUpCalls') || '[]');
+      const updatedWakeUpCalls = wakeUpCalls.filter((call: any) => call.bookingId !== bookingId);
+      localStorage.setItem('wakeUpCalls', JSON.stringify(updatedWakeUpCalls));
       
       toast({
         title: "Check-out Successful",
@@ -526,7 +545,7 @@ const GuestRegistration = () => {
                 <CardTitle className="text-lg">Company / Marketplace</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
+                <div className="form-group">
                   <Label>Select Company (Optional)</Label>
                   <select
                     value={formData.companyId}
@@ -550,8 +569,8 @@ const GuestRegistration = () => {
                 <CardTitle className="text-lg">Primary Guest Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="form-group">
                     <Label>First Name</Label>
                     <Input
                       value={formData.primaryGuest.firstName}
@@ -562,7 +581,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label>Middle Name</Label>
                     <Input
                       value={formData.primaryGuest.middleName}
@@ -572,7 +591,7 @@ const GuestRegistration = () => {
                       }))}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label>Last Name</Label>
                     <Input
                       value={formData.primaryGuest.lastName}
@@ -585,8 +604,8 @@ const GuestRegistration = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-group">
                     <Label>Date of Birth</Label>
                     <Input
                       type="date"
@@ -598,7 +617,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label>Mobile Number</Label>
                     <Input
                       value={formData.primaryGuest.mobile}
@@ -609,7 +628,7 @@ const GuestRegistration = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="form-group">
                   <Label>Address</Label>
                   <Textarea
                     value={formData.primaryGuest.address}
@@ -621,8 +640,8 @@ const GuestRegistration = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="form-group">
                     <Label>Identity Proof Type</Label>
                     <select
                       value={formData.primaryGuest.identityProof}
@@ -640,7 +659,7 @@ const GuestRegistration = () => {
                       <option value="voter">Voter ID</option>
                     </select>
                   </div>
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label>Identity Proof Number</Label>
                     <Input
                       value={formData.primaryGuest.identityNumber}
@@ -652,7 +671,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label>Upload Identity Proof</Label>
                     <FileUploadArea isPrimary={true} />
                   </div>
@@ -685,8 +704,8 @@ const GuestRegistration = () => {
                     </Button>
                     
                     <div className="space-y-4">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-2">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="form-group">
                           <Label>First Name</Label>
                           <Input
                             value={member.firstName}
@@ -694,14 +713,14 @@ const GuestRegistration = () => {
                             required
                           />
                         </div>
-                        <div className="space-y-2">
+                        <div className="form-group">
                           <Label>Middle Name</Label>
                           <Input
                             value={member.middleName}
                             onChange={(e) => updateFamilyMember(index, 'middleName', e.target.value)}
                           />
                         </div>
-                        <div className="space-y-2">
+                        <div className="form-group">
                           <Label>Last Name</Label>
                           <Input
                             value={member.lastName}
@@ -711,8 +730,8 @@ const GuestRegistration = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="form-group">
                           <Label>Date of Birth</Label>
                           <Input
                             type="date"
@@ -721,7 +740,7 @@ const GuestRegistration = () => {
                             required
                           />
                         </div>
-                        <div className="space-y-2">
+                        <div className="form-group">
                           <Label>Mobile Number</Label>
                           <Input
                             value={member.mobile}
@@ -731,8 +750,8 @@ const GuestRegistration = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-4">
-                        <div className="space-y-2">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="form-group">
                           <Label>Identity Proof Type</Label>
                           <select
                             value={member.identityProof}
@@ -747,7 +766,7 @@ const GuestRegistration = () => {
                             <option value="voter">Voter ID</option>
                           </select>
                         </div>
-                        <div className="space-y-2">
+                        <div className="form-group">
                           <Label>Identity Proof Number</Label>
                           <Input
                             value={member.identityNumber || ''}
@@ -756,9 +775,11 @@ const GuestRegistration = () => {
                             required
                           />
                         </div>
-                        <div className="col-span-2 space-y-2">
-                          <Label>Upload Identity Proof</Label>
-                          <FileUploadArea isPrimary={false} memberIndex={index} />
+                        <div className="col-span-2">
+                          <div className="form-group">
+                            <Label>Upload Identity Proof</Label>
+                            <FileUploadArea isPrimary={false} memberIndex={index} />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -774,7 +795,7 @@ const GuestRegistration = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Extra Bed */}
-                <div className="flex items-center space-x-3">
+                <div className="checkbox-wrapper">
                   <Checkbox
                     id="extraBed"
                     checked={formData.extraBed}
@@ -786,58 +807,60 @@ const GuestRegistration = () => {
                 </div>
 
                 {/* Meal Plan */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Meal Plan</Label>
-                  <div className="flex flex-col space-y-3">
-                    {hotelConfig.mealPrices && (
-                      <>
-                        <div className="flex items-center space-x-3">
-                          <Checkbox
-                            id="breakfast"
-                            checked={formData.mealPlan.breakfast}
-                            onCheckedChange={(checked) => setFormData(prev => ({
-                              ...prev,
-                              mealPlan: { ...prev.mealPlan, breakfast: !!checked }
-                            }))}
-                          />
-                          <Label htmlFor="breakfast" className="text-sm font-medium">
-                            Breakfast (₹{hotelConfig.mealPrices.breakfast})
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Checkbox
-                            id="lunch"
-                            checked={formData.mealPlan.lunch}
-                            onCheckedChange={(checked) => setFormData(prev => ({
-                              ...prev,
-                              mealPlan: { ...prev.mealPlan, lunch: !!checked }
-                            }))}
-                          />
-                          <Label htmlFor="lunch" className="text-sm font-medium">
-                            Lunch (₹{hotelConfig.mealPrices.lunch})
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Checkbox
-                            id="dinner"
-                            checked={formData.mealPlan.dinner}
-                            onCheckedChange={(checked) => setFormData(prev => ({
-                              ...prev,
-                              mealPlan: { ...prev.mealPlan, dinner: !!checked }
-                            }))}
-                          />
-                          <Label htmlFor="dinner" className="text-sm font-medium">
-                            Dinner (₹{hotelConfig.mealPrices.dinner})
-                          </Label>
-                        </div>
-                      </>
+                <div className="form-group">
+                  <Label className="text-sm font-medium mb-3 block">Meal Plan</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {hotelConfig.enabledMealPlans?.breakfast && hotelConfig.mealPrices?.breakfast && (
+                      <div className="checkbox-wrapper">
+                        <Checkbox
+                          id="breakfast"
+                          checked={formData.mealPlan.breakfast}
+                          onCheckedChange={(checked) => setFormData(prev => ({
+                            ...prev,
+                            mealPlan: { ...prev.mealPlan, breakfast: !!checked }
+                          }))}
+                        />
+                        <Label htmlFor="breakfast" className="text-sm font-medium">
+                          Breakfast (₹{hotelConfig.mealPrices.breakfast})
+                        </Label>
+                      </div>
+                    )}
+                    {hotelConfig.enabledMealPlans?.lunch && hotelConfig.mealPrices?.lunch && (
+                      <div className="checkbox-wrapper">
+                        <Checkbox
+                          id="lunch"
+                          checked={formData.mealPlan.lunch}
+                          onCheckedChange={(checked) => setFormData(prev => ({
+                            ...prev,
+                            mealPlan: { ...prev.mealPlan, lunch: !!checked }
+                          }))}
+                        />
+                        <Label htmlFor="lunch" className="text-sm font-medium">
+                          Lunch (₹{hotelConfig.mealPrices.lunch})
+                        </Label>
+                      </div>
+                    )}
+                    {hotelConfig.enabledMealPlans?.dinner && hotelConfig.mealPrices?.dinner && (
+                      <div className="checkbox-wrapper">
+                        <Checkbox
+                          id="dinner"
+                          checked={formData.mealPlan.dinner}
+                          onCheckedChange={(checked) => setFormData(prev => ({
+                            ...prev,
+                            mealPlan: { ...prev.mealPlan, dinner: !!checked }
+                          }))}
+                        />
+                        <Label htmlFor="dinner" className="text-sm font-medium">
+                          Dinner (₹{hotelConfig.mealPrices.dinner})
+                        </Label>
+                      </div>
                     )}
                   </div>
                 </div>
 
                 {/* Wake Up Call */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-group">
                     <Label>Wake Up Call Required</Label>
                     <select
                       value={formData.wakeUpCall}
@@ -849,7 +872,7 @@ const GuestRegistration = () => {
                     </select>
                   </div>
                   {formData.wakeUpCall === 'yes' && (
-                    <div className="space-y-2">
+                    <div className="form-group">
                       <Label>Wake Up Time</Label>
                       <Input
                         type="time"
@@ -869,8 +892,8 @@ const GuestRegistration = () => {
                 <CardTitle className="text-lg">Stay Duration & Payment</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-group">
                     <Label>Duration Type</Label>
                     <select
                       value={formData.stayDuration}
@@ -881,7 +904,7 @@ const GuestRegistration = () => {
                       <option value="24hr">24 Hours (From check-in time)</option>
                     </select>
                   </div>
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label>Base Room Fare</Label>
                     <Input
                       type="number"
@@ -892,8 +915,8 @@ const GuestRegistration = () => {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-4 gap-4 mt-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                  <div className="form-group">
                     <Label>Check-in Date</Label>
                     <Input
                       type="date"
@@ -902,7 +925,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label>Check-in Time</Label>
                     <Input
                       type="time"
@@ -911,7 +934,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label>Check-out Date</Label>
                     <Input
                       type="date"
@@ -920,7 +943,7 @@ const GuestRegistration = () => {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label>Check-out Time</Label>
                     <Input
                       type="time"
@@ -965,8 +988,8 @@ const GuestRegistration = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="form-group">
                     <Label>Advance Payment (₹)</Label>
                     <Input
                       type="number"
@@ -975,7 +998,7 @@ const GuestRegistration = () => {
                       min="0"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="form-group">
                     <Label>Remaining Payment (₹)</Label>
                     <Input
                       type="number"
@@ -988,7 +1011,7 @@ const GuestRegistration = () => {
               </CardContent>
             </Card>
 
-            <div className="flex justify-center space-x-4 pt-6">
+            <div className="button-group">
               <Button type="button" variant="outline" onClick={closeGuestForm}>
                 Cancel
               </Button>
@@ -1009,13 +1032,14 @@ const GuestRegistration = () => {
             </DialogTitle>
           </DialogHeader>
           
-          {selectedGuest && <div className="space-y-6">
+          {selectedGuest && (
+            <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Booking Information</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Check-in Date & Time</Label>
                       <p className="font-medium">
@@ -1045,7 +1069,7 @@ const GuestRegistration = () => {
                   <CardTitle>Primary Guest</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Name</Label>
                       <p className="font-medium">
@@ -1076,13 +1100,15 @@ const GuestRegistration = () => {
                 </CardContent>
               </Card>
 
-              {selectedGuest.familyMembers && selectedGuest.familyMembers.length > 0 && <Card>
+              {selectedGuest.familyMembers && selectedGuest.familyMembers.length > 0 && (
+                <Card>
                   <CardHeader>
                     <CardTitle>Family Members ({selectedGuest.familyMembers.length})</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {selectedGuest.familyMembers.map((member: any, index: number) => <div key={index} className="border rounded-lg p-4 mb-4">
-                        <div className="grid grid-cols-2 gap-4">
+                    {selectedGuest.familyMembers.map((member: any, index: number) => (
+                      <div key={index} className="border rounded-lg p-4 mb-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label>Name</Label>
                             <p className="font-medium">
@@ -1106,11 +1132,13 @@ const GuestRegistration = () => {
                             <p className="font-medium font-mono">{member.identityNumber || 'Not provided'}</p>
                           </div>
                         </div>
-                      </div>)}
+                      </div>
+                    ))}
                   </CardContent>
-                </Card>}
+                </Card>
+              )}
 
-              <div className="flex justify-end space-x-4">
+              <div className="button-group">
                 <Button variant="outline" onClick={closeGuestDetails}>
                   Close
                 </Button>
@@ -1118,7 +1146,8 @@ const GuestRegistration = () => {
                   Check Out & Generate Bill
                 </Button>
               </div>
-            </div>}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1132,11 +1161,14 @@ const GuestRegistration = () => {
           {billData && (
             <div className="space-y-4">
               <div className="text-center border-b pb-4">
-                <h2 className="text-xl font-bold">Hotel Bill</h2>
+                <h2 className="text-xl font-bold">{hotelConfig.hotelName || 'Hotel Bill'}</h2>
                 <p className="text-sm text-gray-600">Bill ID: #{billData.bookingId}</p>
+                <p className="text-sm text-gray-600">{hotelConfig.address}</p>
+                <p className="text-sm text-gray-600">Phone: {hotelConfig.phone} | Email: {hotelConfig.email}</p>
+                {hotelConfig.gstNumber && <p className="text-sm text-gray-600">GST: {hotelConfig.gstNumber}</p>}
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Guest Name</Label>
                   <p className="font-medium">{billData.guestName}</p>
@@ -1218,7 +1250,7 @@ const GuestRegistration = () => {
                 Generated on: {new Date(billData.generatedAt).toLocaleString()}
               </div>
 
-              <div className="flex justify-center space-x-4">
+              <div className="button-group">
                 <Button variant="outline" onClick={() => setShowBill(false)}>
                   Close
                 </Button>
