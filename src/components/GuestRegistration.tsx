@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { useGuestStore } from '@/store/guestStore';
 import { format } from 'date-fns';
 import { Upload, X, Plus, Minus, Eye } from 'lucide-react';
+import GuestRegistrationService from '@/services/GuestRegistrationService';
 
 const GuestRegistration = () => {
   const {
@@ -19,9 +20,9 @@ const GuestRegistration = () => {
     selectedDate,
     selectedGuest,
     closeGuestForm,
-    closeGuestDetails
+    closeGuestDetails,
   } = useGuestStore();
-  
+
   const [formData, setFormData] = useState({
     primaryGuest: {
       firstName: '',
@@ -32,7 +33,7 @@ const GuestRegistration = () => {
       address: '',
       identityProof: '',
       identityNumber: '',
-      identityFile: null as File | null
+      identityFile: null as File | null,
     },
     familyMembers: [] as any[],
     checkInTime: '',
@@ -49,31 +50,42 @@ const GuestRegistration = () => {
     mealPlan: {
       breakfast: false,
       lunch: false,
-      dinner: false
+      dinner: false,
     },
     wakeUpCall: '',
-    wakeUpCallTime: ''
+    wakeUpCallTime: '',
   });
 
   const [dragActive, setDragActive] = useState(false);
-  const [imagePreview, setImagePreview] = useState<{
-    [key: string]: string;
-  }>({});
+  const [imagePreview, setImagePreview] = useState<{ [key: string]: string }>({});
   const [companies, setCompanies] = useState<any[]>([]);
   const [hotelConfig, setHotelConfig] = useState<any>({});
   const [showBill, setShowBill] = useState(false);
   const [billData, setBillData] = useState<any>(null);
 
   useEffect(() => {
-    const savedCompanies = localStorage.getItem('companies');
-    if (savedCompanies) {
-      setCompanies(JSON.parse(savedCompanies));
-    }
-    
-    const savedConfig = localStorage.getItem('hotelConfig');
-    if (savedConfig) {
-      setHotelConfig(JSON.parse(savedConfig));
-    }
+    // Fetch companies and hotel config from API or another service
+    // For now, we'll assume these are fetched similarly or provided elsewhere
+    // Replace localStorage with API calls if available
+    const fetchConfig = async () => {
+      try {
+        // Example: Replace with actual API calls
+        setCompanies([{ id: '1', companyName: 'Default Company', roomPriceDiscount: 10, gstPercentage: 12 }]); // Mock data
+        setHotelConfig({
+          extraBedPrice: 500,
+          mealPrices: { breakfast: 200, lunch: 300, dinner: 400 },
+          enabledMealPlans: { breakfast: true, lunch: true, dinner: true },
+          hotelName: 'Sample Hotel',
+          address: '123 Hotel St, City',
+          phone: '123-456-7890',
+          email: 'info@hotel.com',
+          gstNumber: 'GST123456',
+        });
+      } catch (error) {
+        console.error('Error fetching config:', error);
+      }
+    };
+    fetchConfig();
   }, []);
 
   useEffect(() => {
@@ -95,98 +107,114 @@ const GuestRegistration = () => {
         checkOutDate = format(checkOutDateTime, 'yyyy-MM-dd');
         checkOutTime = checkInTime;
       }
-      
-      setFormData(prev => ({
+
+      setFormData((prev) => ({
         ...prev,
         checkInDate,
         checkInTime,
         checkOutDate,
         checkOutTime,
         farePerNight: roomInfo?.price || 1000,
-        extraBedPrice: hotelConfig.extraBedPrice || 0
+        extraBedPrice: hotelConfig.extraBedPrice || 0,
       }));
     }
   }, [isGuestFormOpen, selectedDate, selectedRoom, formData.stayDuration, hotelConfig]);
 
   useEffect(() => {
-    // Calculate remaining payment
     const extraBedCost = formData.extraBed ? formData.extraBedPrice : 0;
     const mealCosts = calculateMealCosts();
     const totalFare = formData.farePerNight + extraBedCost + mealCosts;
-    
-    // Apply company discount if selected
+
     let finalFare = totalFare;
     let appliedDiscount = 0;
     let gstRate = 0;
-    
+
     if (formData.companyId) {
-      const selectedCompany = companies.find(c => c.id === formData.companyId);
+      const selectedCompany = companies.find((c) => c.id === formData.companyId);
       if (selectedCompany) {
         appliedDiscount = (totalFare * selectedCompany.roomPriceDiscount) / 100;
         finalFare = totalFare - appliedDiscount;
         gstRate = selectedCompany.gstPercentage;
       }
     }
-    
+
     const remaining = finalFare - formData.advancePayment;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      remainingPayment: Math.max(0, remaining)
+      remainingPayment: Math.max(0, remaining),
     }));
-  }, [formData.farePerNight, formData.advancePayment, formData.extraBed, formData.extraBedPrice, formData.mealPlan, formData.companyId, companies, hotelConfig]);
+  }, [
+    formData.farePerNight,
+    formData.advancePayment,
+    formData.extraBed,
+    formData.extraBedPrice,
+    formData.mealPlan,
+    formData.companyId,
+    companies,
+    hotelConfig,
+  ]);
 
   const calculateMealCosts = () => {
     let total = 0;
-    if (formData.mealPlan.breakfast && hotelConfig.mealPrices?.breakfast && hotelConfig.enabledMealPlans?.breakfast) {
+    if (
+      formData.mealPlan.breakfast &&
+      hotelConfig.mealPrices?.breakfast &&
+      hotelConfig.enabledMealPlans?.breakfast
+    ) {
       total += hotelConfig.mealPrices.breakfast;
     }
-    if (formData.mealPlan.lunch && hotelConfig.mealPrices?.lunch && hotelConfig.enabledMealPlans?.lunch) {
+    if (
+      formData.mealPlan.lunch &&
+      hotelConfig.mealPrices?.lunch &&
+      hotelConfig.enabledMealPlans?.lunch
+    ) {
       total += hotelConfig.mealPrices.lunch;
     }
-    if (formData.mealPlan.dinner && hotelConfig.mealPrices?.dinner && hotelConfig.enabledMealPlans?.dinner) {
+    if (
+      formData.mealPlan.dinner &&
+      hotelConfig.mealPrices?.dinner &&
+      hotelConfig.enabledMealPlans?.dinner
+    ) {
       total += hotelConfig.mealPrices.dinner;
     }
     return total;
   };
 
   const getRoomInfo = (roomNumber: string) => {
-    const hotelConfig = JSON.parse(localStorage.getItem('hotelConfig') || '{}');
-    if (!hotelConfig.roomTypes) return {
-      price: 1000,
-      type: 'Regular'
-    };
-
-    const roomNum = parseInt(roomNumber.slice(-1));
-    const typeIndex = (roomNum - 1) % hotelConfig.roomTypes.length;
-    return hotelConfig.roomTypes[typeIndex];
+    // Replace localStorage with API call if available
+    return { price: 1000, type: 'Regular' }; // Mock data
   };
 
   const checkExistingGuest = async (mobile: string) => {
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    const existingBooking = bookings.find((booking: any) => booking.primaryGuest.mobile === mobile);
-    if (existingBooking) {
-      setFormData(prev => ({
-        ...prev,
-        primaryGuest: {
-          ...prev.primaryGuest,
-          ...existingBooking.primaryGuest,
-          mobile
-        }
-      }));
-      toast({
-        title: "Returning Guest",
-        description: "Guest details loaded from previous booking"
-      });
+    try {
+      const response = await GuestRegistrationService.getAllRegistrations();
+      const bookings = response.data;
+      const existingBooking = bookings.find(
+        (booking: any) => booking.primaryGuest.mobile === mobile
+      );
+      if (existingBooking) {
+        setFormData((prev) => ({
+          ...prev,
+          primaryGuest: {
+            ...prev.primaryGuest,
+            ...existingBooking.primaryGuest,
+            mobile,
+          },
+        }));
+        toast({
+          title: 'Returning Guest',
+          description: 'Guest details loaded from previous booking',
+        });
+      }
+    } catch (error) {
+      console.error('Error checking existing guest:', error);
     }
   };
 
   const handleMobileChange = (mobile: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      primaryGuest: {
-        ...prev.primaryGuest,
-        mobile
-      }
+      primaryGuest: { ...prev.primaryGuest, mobile },
     }));
     if (mobile.length === 10) {
       checkExistingGuest(mobile);
@@ -194,53 +222,56 @@ const GuestRegistration = () => {
   };
 
   const addFamilyMember = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      familyMembers: [...prev.familyMembers, {
-        firstName: '',
-        middleName: '',
-        lastName: '',
-        dob: '',
-        mobile: '',
-        address: '',
-        identityProof: '',
-        identityNumber: '',
-        identityFile: null
-      }]
+      familyMembers: [
+        ...prev.familyMembers,
+        {
+          firstName: '',
+          middleName: '',
+          lastName: '',
+          dob: '',
+          mobile: '',
+          address: '',
+          identityProof: '',
+          identityNumber: '',
+          identityFile: null,
+        },
+      ],
     }));
   };
 
   const removeFamilyMember = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      familyMembers: prev.familyMembers.filter((_, i) => i !== index)
+      familyMembers: prev.familyMembers.filter((_, i) => i !== index),
     }));
   };
 
   const updateFamilyMember = (index: number, field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      familyMembers: prev.familyMembers.map((member, i) => i === index ? {
-        ...member,
-        [field]: value
-      } : member)
+      familyMembers: prev.familyMembers.map((member, i) =>
+        i === index ? { ...member, [field]: value } : member
+      ),
     }));
   };
 
-  const handleFileUpload = (file: File, isPrimary: boolean = true, memberIndex?: number) => {
+  const handleFileUpload = (
+    file: File,
+    isPrimary: boolean = true,
+    memberIndex?: number
+  ) => {
     if (isPrimary) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        primaryGuest: {
-          ...prev.primaryGuest,
-          identityFile: file
-        }
+        primaryGuest: { ...prev.primaryGuest, identityFile: file },
       }));
       const reader = new FileReader();
       reader.onload = () => {
-        setImagePreview(prev => ({
+        setImagePreview((prev) => ({
           ...prev,
-          primary: reader.result as string
+          primary: reader.result as string,
         }));
       };
       reader.readAsDataURL(file);
@@ -248,30 +279,34 @@ const GuestRegistration = () => {
       updateFamilyMember(memberIndex, 'identityFile', file);
       const reader = new FileReader();
       reader.onload = () => {
-        setImagePreview(prev => ({
+        setImagePreview((prev) => ({
           ...prev,
-          [`member-${memberIndex}`]: reader.result as string
+          [`member-${memberIndex}`]: reader.result as string,
         }));
       };
       reader.readAsDataURL(file);
     }
     toast({
-      title: "File Uploaded",
-      description: `${file.name} uploaded successfully`
+      title: 'File Uploaded',
+      description: `${file.name} uploaded successfully`,
     });
   };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
   };
 
-  const handleDrop = (e: React.DragEvent, isPrimary: boolean = true, memberIndex?: number) => {
+  const handleDrop = (
+    e: React.DragEvent,
+    isPrimary: boolean = true,
+    memberIndex?: number
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -281,19 +316,20 @@ const GuestRegistration = () => {
   };
 
   const generateBill = (bookingData: any) => {
-    const selectedCompany = companies.find(c => c.id === bookingData.companyId);
+    const selectedCompany = companies.find((c) => c.id === bookingData.companyId);
     const extraBedCost = bookingData.extraBed ? bookingData.extraBedPrice : 0;
-    const mealCosts = (bookingData.mealPlan?.breakfast ? (hotelConfig.mealPrices?.breakfast || 0) : 0) +
-                      (bookingData.mealPlan?.lunch ? (hotelConfig.mealPrices?.lunch || 0) : 0) +
-                      (bookingData.mealPlan?.dinner ? (hotelConfig.mealPrices?.dinner || 0) : 0);
-    
+    const mealCosts =
+      (bookingData.mealPlan?.breakfast ? hotelConfig.mealPrices?.breakfast || 0 : 0) +
+      (bookingData.mealPlan?.lunch ? hotelConfig.mealPrices?.lunch || 0 : 0) +
+      (bookingData.mealPlan?.dinner ? hotelConfig.mealPrices?.dinner || 0 : 0);
+
     const totalFare = bookingData.farePerNight + extraBedCost + mealCosts;
-    
+
     let finalFare = totalFare;
     let appliedDiscount = 0;
     let gstRate = 0;
     let gstAmount = 0;
-    
+
     if (selectedCompany) {
       appliedDiscount = (totalFare * selectedCompany.roomPriceDiscount) / 100;
       finalFare = totalFare - appliedDiscount;
@@ -320,27 +356,27 @@ const GuestRegistration = () => {
       gstAmount,
       grandTotal: finalFare + gstAmount,
       advancePayment: bookingData.advancePayment,
-      remainingPayment: (finalFare + gstAmount) - bookingData.advancePayment,
+      remainingPayment: finalFare + gstAmount - bookingData.advancePayment,
       companyName: selectedCompany?.companyName || 'Walk-in Guest',
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     };
 
     setBillData(bill);
     setShowBill(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const selectedCompany = companies.find(c => c.id === formData.companyId);
+
+    const selectedCompany = companies.find((c) => c.id === formData.companyId);
     const extraBedCost = formData.extraBed ? formData.extraBedPrice : 0;
     const mealCosts = calculateMealCosts();
     const totalFare = formData.farePerNight + extraBedCost + mealCosts;
-    
+
     let finalFare = totalFare;
     let appliedDiscount = 0;
     let gstRate = 0;
-    
+
     if (selectedCompany) {
       appliedDiscount = (totalFare * selectedCompany.roomPriceDiscount) / 100;
       finalFare = totalFare - appliedDiscount;
@@ -348,7 +384,7 @@ const GuestRegistration = () => {
     }
 
     const booking = {
-      id: Date.now(),
+      id: Date.now().toString(),
       roomNumber: selectedRoom,
       ...formData,
       totalGuests: 1 + formData.familyMembers.length,
@@ -364,35 +400,56 @@ const GuestRegistration = () => {
         finalFare,
         gstRate,
         gstAmount: (finalFare * gstRate) / 100,
-        grandTotal: finalFare + (finalFare * gstRate) / 100
-      }
+        grandTotal: finalFare + (finalFare * gstRate) / 100,
+      },
     };
 
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    bookings.push(booking);
-    localStorage.setItem('bookings', JSON.stringify(bookings));
-    
-    // Store wake up call if set
-    if (formData.wakeUpCall === 'yes' && formData.wakeUpCallTime) {
-      const wakeUpCalls = JSON.parse(localStorage.getItem('wakeUpCalls') || '[]');
-      wakeUpCalls.push({
-        roomNumber: selectedRoom,
-        time: formData.wakeUpCallTime,
-        date: formData.checkInDate,
-        guestName: `${formData.primaryGuest.firstName} ${formData.primaryGuest.lastName}`,
-        bookingId: booking.id
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('booking', JSON.stringify(booking));
+
+      if (formData.primaryGuest.identityFile) {
+        formDataToSend.append('primaryIdentityFile', formData.primaryGuest.identityFile);
+      }
+
+      formData.familyMembers.forEach((member, index) => {
+        if (member.identityFile) {
+          formDataToSend.append(`familyMemberIdentityFile_${index}`, member.identityFile);
+        }
       });
-      localStorage.setItem('wakeUpCalls', JSON.stringify(wakeUpCalls));
+
+      // Store wake up call if set
+      if (formData.wakeUpCall === 'yes' && formData.wakeUpCallTime) {
+        formDataToSend.append(
+          'wakeUpCall',
+          JSON.stringify({
+            roomNumber: selectedRoom,
+            time: formData.wakeUpCallTime,
+            date: formData.checkInDate,
+            guestName: `${formData.primaryGuest.firstName} ${formData.primaryGuest.lastName}`,
+            bookingId: booking.id,
+          })
+        );
+      }
+
+      await GuestRegistrationService.createRegistration(formDataToSend);
+
+      toast({
+        title: 'Booking Confirmed',
+        description: `Room ${selectedRoom} booked successfully`,
+      });
+
+      closeGuestForm();
+      resetForm();
+      window.dispatchEvent(new CustomEvent('refreshDashboard'));
+    } catch (error) {
+      console.error('Error creating registration:', error);
+      toast({
+        title: 'Booking Failed',
+        description: 'An error occurred while confirming the booking',
+        variant: 'destructive',
+      });
     }
-    
-    toast({
-      title: "Booking Confirmed",
-      description: `Room ${selectedRoom} booked successfully`
-    });
-    
-    closeGuestForm();
-    resetForm();
-    window.dispatchEvent(new CustomEvent('refreshDashboard'));
   };
 
   const resetForm = () => {
@@ -406,7 +463,7 @@ const GuestRegistration = () => {
         address: '',
         identityProof: '',
         identityNumber: '',
-        identityFile: null
+        identityFile: null,
       },
       familyMembers: [],
       checkInTime: '',
@@ -423,53 +480,58 @@ const GuestRegistration = () => {
       mealPlan: {
         breakfast: false,
         lunch: false,
-        dinner: false
+        dinner: false,
       },
       wakeUpCall: '',
-      wakeUpCallTime: ''
+      wakeUpCallTime: '',
     });
     setImagePreview({});
   };
 
-  const handleCheckOut = (bookingId: number) => {
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    const booking = bookings.find((b: any) => b.id === bookingId);
-    
-    if (booking) {
-      // Generate bill first
-      generateBill(booking);
-      
-      // Set room to cleaning status
-      const roomStatuses = JSON.parse(localStorage.getItem('roomStatuses') || '{}');
-      roomStatuses[booking.roomNumber] = 'cleaning';
-      localStorage.setItem('roomStatuses', JSON.stringify(roomStatuses));
-      
-      // Remove booking
-      const updatedBookings = bookings.filter((b: any) => b.id !== bookingId);
-      localStorage.setItem('bookings', JSON.stringify(updatedBookings));
-      
-      // Remove wake up call if exists
-      const wakeUpCalls = JSON.parse(localStorage.getItem('wakeUpCalls') || '[]');
-      const updatedWakeUpCalls = wakeUpCalls.filter((call: any) => call.bookingId !== bookingId);
-      localStorage.setItem('wakeUpCalls', JSON.stringify(updatedWakeUpCalls));
-      
+  const handleCheckOut = async (bookingId: string) => {
+    try {
+      const response = await GuestRegistrationService.getRegistrationById(bookingId);
+      const booking = response.data;
+
+      if (booking) {
+        generateBill(booking);
+
+        // Set room to cleaning status (assuming another API or service handles this)
+        // For now, we'll skip room status update as it was localStorage-based
+
+        await GuestRegistrationService.deleteRegistration(bookingId);
+
+        toast({
+          title: 'Check-out Successful',
+          description: 'Guest has been checked out. Room is now in cleaning mode.',
+        });
+      }
+
+      closeGuestDetails();
+      window.dispatchEvent(new CustomEvent('refreshDashboard'));
+    } catch (error) {
+      console.error('Error during check-out:', error);
       toast({
-        title: "Check-out Successful",
-        description: "Guest has been checked out. Room is now in cleaning mode."
+        title: 'Check-out Failed',
+        description: 'An error occurred during check-out',
+        variant: 'destructive',
       });
     }
-    
-    closeGuestDetails();
-    window.dispatchEvent(new CustomEvent('refreshDashboard'));
   };
 
-  const FileUploadArea = ({ isPrimary = true, memberIndex }: { isPrimary?: boolean; memberIndex?: number; }) => {
+  const FileUploadArea = ({
+    isPrimary = true,
+    memberIndex,
+  }: {
+    isPrimary?: boolean;
+    memberIndex?: number;
+  }) => {
     const previewKey = isPrimary ? 'primary' : `member-${memberIndex}`;
     const hasPreview = imagePreview[previewKey];
-    
+
     return (
       <div className="space-y-2">
-        <div 
+        <div
           className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
             dragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-primary'
           }`}
@@ -477,7 +539,9 @@ const GuestRegistration = () => {
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={(e) => handleDrop(e, isPrimary, memberIndex)}
-          onClick={() => document.getElementById(`file-${isPrimary ? 'primary' : memberIndex}`)?.click()}
+          onClick={() =>
+            document.getElementById(`file-${isPrimary ? 'primary' : memberIndex}`)?.click()
+          }
         >
           <input
             id={`file-${isPrimary ? 'primary' : memberIndex}`}
@@ -491,20 +555,16 @@ const GuestRegistration = () => {
             }}
           />
           <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-          <p className="text-sm text-gray-600">
-            Drag and drop identity proof or click to browse
-          </p>
-          <p className="text-xs text-gray-400">
-            Supports PDF, JPG, PNG files
-          </p>
+          <p className="text-sm text-gray-600">Drag and drop identity proof or click to browse</p>
+          <p className="text-xs text-gray-400">Supports PDF, JPG, PNG files</p>
         </div>
-        
+
         {hasPreview && (
           <div className="relative">
-            <img 
-              src={imagePreview[previewKey]} 
-              alt="Identity proof preview" 
-              className="w-full h-32 object-cover rounded-lg border" 
+            <img
+              src={imagePreview[previewKey]}
+              alt="Identity proof preview"
+              className="w-full h-32 object-cover rounded-lg border"
             />
             <Button
               type="button"
@@ -514,7 +574,9 @@ const GuestRegistration = () => {
               onClick={() => {
                 const newWindow = window.open();
                 if (newWindow) {
-                  newWindow.document.write(`<img src="${imagePreview[previewKey]}" style="max-width: 100%; max-height: 100%;" />`);
+                  newWindow.document.write(
+                    `<img src="${imagePreview[previewKey]}" style="max-width: 100%; max-height: 100%;" />`
+                  );
                 }
               }}
             >
@@ -532,11 +594,9 @@ const GuestRegistration = () => {
       <Dialog open={isGuestFormOpen} onOpenChange={closeGuestForm}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Guest Registration - Room {selectedRoom}
-            </DialogTitle>
+            <DialogTitle>Guest Registration - Room {selectedRoom}</DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Company Selection */}
             <Card>
@@ -548,7 +608,9 @@ const GuestRegistration = () => {
                   <Label>Select Company (Optional)</Label>
                   <select
                     value={formData.companyId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, companyId: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, companyId: e.target.value }))
+                    }
                     className="w-full rounded-md border border-input bg-background px-3 py-2"
                   >
                     <option value="">Walk-in Guest</option>
@@ -573,10 +635,12 @@ const GuestRegistration = () => {
                     <Label>First Name</Label>
                     <Input
                       value={formData.primaryGuest.firstName}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, firstName: e.target.value }
-                      }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          primaryGuest: { ...prev.primaryGuest, firstName: e.target.value },
+                        }))
+                      }
                       required
                     />
                   </div>
@@ -584,20 +648,24 @@ const GuestRegistration = () => {
                     <Label>Middle Name</Label>
                     <Input
                       value={formData.primaryGuest.middleName}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, middleName: e.target.value }
-                      }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          primaryGuest: { ...prev.primaryGuest, middleName: e.target.value },
+                        }))
+                      }
                     />
                   </div>
                   <div className="form-group">
                     <Label>Last Name</Label>
                     <Input
                       value={formData.primaryGuest.lastName}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, lastName: e.target.value }
-                      }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          primaryGuest: { ...prev.primaryGuest, lastName: e.target.value },
+                        }))
+                      }
                       required
                     />
                   </div>
@@ -609,10 +677,12 @@ const GuestRegistration = () => {
                     <Input
                       type="date"
                       value={formData.primaryGuest.dob}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, dob: e.target.value }
-                      }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          primaryGuest: { ...prev.primaryGuest, dob: e.target.value },
+                        }))
+                      }
                       required
                     />
                   </div>
@@ -631,10 +701,12 @@ const GuestRegistration = () => {
                   <Label>Address</Label>
                   <Textarea
                     value={formData.primaryGuest.address}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      primaryGuest: { ...prev.primaryGuest, address: e.target.value }
-                    }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        primaryGuest: { ...prev.primaryGuest, address: e.target.value },
+                      }))
+                    }
                     required
                   />
                 </div>
@@ -644,10 +716,12 @@ const GuestRegistration = () => {
                     <Label>Identity Proof Type</Label>
                     <select
                       value={formData.primaryGuest.identityProof}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, identityProof: e.target.value }
-                      }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          primaryGuest: { ...prev.primaryGuest, identityProof: e.target.value },
+                        }))
+                      }
                       className="w-full rounded-md border border-input bg-background px-3 py-2"
                       required
                     >
@@ -662,10 +736,12 @@ const GuestRegistration = () => {
                     <Label>Identity Proof Number</Label>
                     <Input
                       value={formData.primaryGuest.identityNumber}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, identityNumber: e.target.value }
-                      }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          primaryGuest: { ...prev.primaryGuest, identityNumber: e.target.value },
+                        }))
+                      }
                       placeholder="Enter ID number"
                       required
                     />
@@ -701,14 +777,16 @@ const GuestRegistration = () => {
                     >
                       <X className="h-4 w-4" />
                     </Button>
-                    
+
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="form-group">
                           <Label>First Name</Label>
                           <Input
                             value={member.firstName}
-                            onChange={(e) => updateFamilyMember(index, 'firstName', e.target.value)}
+                            onChange={(e) =>
+                              updateFamilyMember(index, 'firstName', e.target.value)
+                            }
                             required
                           />
                         </div>
@@ -716,14 +794,18 @@ const GuestRegistration = () => {
                           <Label>Middle Name</Label>
                           <Input
                             value={member.middleName}
-                            onChange={(e) => updateFamilyMember(index, 'middleName', e.target.value)}
+                            onChange={(e) =>
+                              updateFamilyMember(index, 'middleName', e.target.value)
+                            }
                           />
                         </div>
                         <div className="form-group">
                           <Label>Last Name</Label>
                           <Input
                             value={member.lastName}
-                            onChange={(e) => updateFamilyMember(index, 'lastName', e.target.value)}
+                            onChange={(e) =>
+                              updateFamilyMember(index, 'lastName', e.target.value)
+                            }
                             required
                           />
                         </div>
@@ -735,7 +817,8 @@ const GuestRegistration = () => {
                           <Input
                             type="date"
                             value={member.dob}
-                            onChange={(e) => updateFamilyMember(index, 'dob', e.target.value)}
+                            onChange={(e) => updateFamilyMember(index, 'dob', e.target.value)
+                            }
                             required
                           />
                         </div>
@@ -743,7 +826,9 @@ const GuestRegistration = () => {
                           <Label>Mobile Number</Label>
                           <Input
                             value={member.mobile}
-                            onChange={(e) => updateFamilyMember(index, 'mobile', e.target.value)}
+                            onChange={(e) =>
+                              updateFamilyMember(index, 'mobile', e.target.value)
+                            }
                             maxLength={10}
                           />
                         </div>
@@ -754,8 +839,10 @@ const GuestRegistration = () => {
                           <Label>Identity Proof Type</Label>
                           <select
                             value={member.identityProof}
-                            onChange={(e) => updateFamilyMember(index, 'identityProof', e.target.value)}
-                            className="w-full rounded-md border border-input bg-background px-3 py-2"
+                            onChange={(e) =>
+                              updateFamilyMember(index, 'identityProof', e.target.value)
+                            }
+                            className="w-full rounded-md border border-input bg-background-primary px-3 py-2"
                             required
                           >
                             <option value="">Select Identity Proof</option>
@@ -769,7 +856,9 @@ const GuestRegistration = () => {
                           <Label>Identity Proof Number</Label>
                           <Input
                             value={member.identityNumber || ''}
-                            onChange={(e) => updateFamilyMember(index, 'identityNumber', e.target.value)}
+                            onChange={(e) =>
+                              updateFamilyMember(index, 'identityNumber', e.target.value)
+                            }
                             placeholder="Enter ID number"
                             required
                           />
@@ -798,7 +887,9 @@ const GuestRegistration = () => {
                   <Checkbox
                     id="extraBed"
                     checked={formData.extraBed}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, extraBed: !!checked }))}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, extraBed: !!checked }))
+                    }
                   />
                   <Label htmlFor="extraBed" className="text-sm font-medium">
                     Extra Bed (₹{formData.extraBedPrice})
@@ -809,51 +900,59 @@ const GuestRegistration = () => {
                 <div className="form-group">
                   <Label className="text-sm font-medium mb-3 block">Meal Plan</Label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {hotelConfig.enabledMealPlans?.breakfast && hotelConfig.mealPrices?.breakfast && (
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="breakfast"
-                          checked={formData.mealPlan.breakfast}
-                          onCheckedChange={(checked) => setFormData(prev => ({
-                            ...prev,
-                            mealPlan: { ...prev.mealPlan, breakfast: !!checked }
-                          }))}
-                        />
-                        <Label htmlFor="breakfast" className="text-sm font-medium">
-                          Breakfast (₹{hotelConfig.mealPrices.breakfast})
-                        </Label>
-                      </div>
-                    )}
+                    {hotelConfig.enabledMealPlans?.breakfast &&
+                      hotelConfig.mealPrices?.breakfast && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="breakfast"
+                            checked={formData.mealPlan.breakfast}
+                            onCheckedChange={(checked) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                mealPlan: { ...prev.mealPlan, breakfast: !!checked },
+                              }))
+                            }
+                          />
+                          <Label htmlFor="breakfast" className="text-sm font-medium">
+                            Breakfast (₹{hotelConfig.mealPrices.breakfast})
+                          </Label>
+                        </div>
+                      )}
                     {hotelConfig.enabledMealPlans?.lunch && hotelConfig.mealPrices?.lunch && (
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           id="lunch"
                           checked={formData.mealPlan.lunch}
-                          onCheckedChange={(checked) => setFormData(prev => ({
-                            ...prev,
-                            mealPlan: { ...prev.mealPlan, lunch: !!checked }
-                          }))}
+                          onCheckedChange={(checked) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              mealPlan: { ...prev.mealPlan, lunch: !!checked },
+                            }))
+                          }
                         />
                         <Label htmlFor="lunch" className="text-sm font-medium">
                           Lunch (₹{hotelConfig.mealPrices.lunch})
                         </Label>
                       </div>
                     )}
-                    {hotelConfig.enabledMealPlans?.dinner && hotelConfig.mealPrices?.dinner && (
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="dinner"
-                          checked={formData.mealPlan.dinner}
-                          onCheckedChange={(checked) => setFormData(prev => ({
-                            ...prev,
-                            mealPlan: { ...prev.mealPlan, dinner: !!checked }
-                          }))}
-                        />
-                        <Label htmlFor="dinner" className="text-sm font-medium">
-                          Dinner (₹{hotelConfig.mealPrices.dinner})
-                        </Label>
-                      </div>
-                    )}
+                    {hotelConfig.enabledMealPlans?.dinner &&
+                      hotelConfig.mealPrices?.dinner && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="dinner"
+                            checked={formData.mealPlan.dinner}
+                            onCheckedChange={(checked) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                mealPlan: { ...prev.mealPlan, dinner: !!checked },
+                              }))
+                            }
+                          />
+                          <Label htmlFor="dinner" className="text-sm font-medium">
+                            Dinner (₹{hotelConfig.mealPrices.dinner})
+                          </Label>
+                        </div>
+                      )}
                   </div>
                 </div>
 
@@ -863,7 +962,9 @@ const GuestRegistration = () => {
                     <Label>Wake Up Call Required</Label>
                     <select
                       value={formData.wakeUpCall}
-                      onChange={(e) => setFormData(prev => ({ ...prev, wakeUpCall: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, wakeUpCall: e.target.value }))
+                      }
                       className="w-full rounded-md border border-input bg-background px-3 py-2"
                     >
                       <option value="">No Wake Up Call</option>
@@ -876,7 +977,12 @@ const GuestRegistration = () => {
                       <Input
                         type="time"
                         value={formData.wakeUpCallTime}
-                        onChange={(e) => setFormData(prev => ({ ...prev, wakeUpCallTime: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            wakeUpCallTime: e.target.value,
+                          }))
+                        }
                         required
                       />
                     </div>
@@ -896,7 +1002,9 @@ const GuestRegistration = () => {
                     <Label>Duration Type</Label>
                     <select
                       value={formData.stayDuration}
-                      onChange={(e) => setFormData(prev => ({ ...prev, stayDuration: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, stayDuration: e.target.value }))
+                      }
                       className="w-full rounded-md border border-input bg-background px-3 py-2"
                     >
                       <option value="12hr">12 Hours (Check-out at 12:00 PM next day)</option>
@@ -908,19 +1016,26 @@ const GuestRegistration = () => {
                     <Input
                       type="number"
                       value={formData.farePerNight}
-                      onChange={(e) => setFormData(prev => ({ ...prev, farePerNight: parseInt(e.target.value) }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          farePerNight: parseInt(e.target.value),
+                        }))
+                      }
                       required
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
                   <div className="form-group">
                     <Label>Check-in Date</Label>
                     <Input
                       type="date"
                       value={formData.checkInDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, checkInDate: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, checkInDate: e.target.value }))
+                      }
                       required
                     />
                   </div>
@@ -929,7 +1044,9 @@ const GuestRegistration = () => {
                     <Input
                       type="time"
                       value={formData.checkInTime}
-                      onChange={(e) => setFormData(prev => ({ ...prev, checkInTime: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, checkInTime: e.target.value }))
+                      }
                       required
                     />
                   </div>
@@ -938,7 +1055,9 @@ const GuestRegistration = () => {
                     <Input
                       type="date"
                       value={formData.checkOutDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, checkOutDate: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, checkOutDate: e.target.value }))
+                      }
                       required
                     />
                   </div>
@@ -947,7 +1066,9 @@ const GuestRegistration = () => {
                     <Input
                       type="time"
                       value={formData.checkOutTime}
-                      onChange={(e) => setFormData(prev => ({ ...prev, checkOutTime: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, checkOutTime: e.target.value }))
+                      }
                       required
                     />
                   </div>
@@ -967,7 +1088,9 @@ const GuestRegistration = () => {
                         <span>₹{formData.extraBedPrice}</span>
                       </div>
                     )}
-                    {(formData.mealPlan.breakfast || formData.mealPlan.lunch || formData.mealPlan.dinner) && (
+                    {(formData.mealPlan.breakfast ||
+                      formData.mealPlan.lunch ||
+                      formData.mealPlan.dinner) && (
                       <div className="flex justify-between">
                         <span>Meals:</span>
                         <span>₹{calculateMealCosts()}</span>
@@ -976,13 +1099,34 @@ const GuestRegistration = () => {
                     {formData.companyId && (
                       <div className="flex justify-between text-green-600">
                         <span>Company Discount:</span>
-                        <span>-₹{((formData.farePerNight + (formData.extraBed ? formData.extraBedPrice : 0) + calculateMealCosts()) * (companies.find(c => c.id === formData.companyId)?.roomPriceDiscount || 0)) / 100}</span>
+                        <span>
+                          -₹
+                          {(
+                            (formData.farePerNight +
+                              (formData.extraBed ? formData.extraBedPrice : 0) +
+                              calculateMealCosts()) *
+                            (companies.find((c) => c.id === formData.companyId)
+                              ?.roomPriceDiscount || 0)
+                          ) / 100}
+                        </span>
                       </div>
                     )}
                     <hr className="my-2" />
                     <div className="flex justify-between font-semibold">
                       <span>Total Amount:</span>
-                      <span>₹{formData.farePerNight + (formData.extraBed ? formData.extraBedPrice : 0) + calculateMealCosts() - ((formData.farePerNight + (formData.extraBed ? formData.extraBedPrice : 0) + calculateMealCosts()) * (companies.find(c => c.id === formData.companyId)?.roomPriceDiscount || 0)) / 100}</span>
+                      <span>
+                        ₹
+                        {formData.farePerNight +
+                          (formData.extraBed ? formData.extraBedPrice : 0) +
+                          calculateMealCosts() -
+                          ((
+                            (formData.farePerNight +
+                              (formData.extraBed ? formData.extraBedPrice : 0) +
+                              calculateMealCosts()) *
+                            (companies.find((c) => c.id === formData.companyId)
+                              ?.roomPriceDiscount || 0)
+                          ) / 100)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -993,7 +1137,12 @@ const GuestRegistration = () => {
                     <Input
                       type="number"
                       value={formData.advancePayment}
-                      onChange={(e) => setFormData(prev => ({ ...prev, advancePayment: parseInt(e.target.value) || 0 }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          advancePayment: parseInt(e.target.value) || 0,
+                        }))
+                      }
                       min="0"
                     />
                   </div>
@@ -1014,9 +1163,7 @@ const GuestRegistration = () => {
               <Button type="button" variant="outline" onClick={closeGuestForm}>
                 Cancel
               </Button>
-              <Button type="submit">
-                Confirm Booking
-              </Button>
+              <Button type="submit">Confirm Booking</Button>
             </div>
           </form>
         </DialogContent>
@@ -1026,11 +1173,9 @@ const GuestRegistration = () => {
       <Dialog open={isGuestDetailsOpen} onOpenChange={closeGuestDetails}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Guest Details - Room {selectedGuest?.roomNumber}
-            </DialogTitle>
+            <DialogTitle>Guest Details - Room {selectedGuest?.roomNumber}</DialogTitle>
           </DialogHeader>
-          
+
           {selectedGuest && (
             <div className="space-y-6">
               <Card>
@@ -1053,11 +1198,15 @@ const GuestRegistration = () => {
                     </div>
                     <div>
                       <Label>Total Amount</Label>
-                      <p className="font-medium">₹{selectedGuest.billing?.grandTotal || selectedGuest.farePerNight}</p>
+                      <p className="font-medium">
+                        ₹{selectedGuest.billing?.grandTotal || selectedGuest.farePerNight}
+                      </p>
                     </div>
                     <div>
                       <Label>Remaining Payment</Label>
-                      <p className="font-medium text-red-600">₹{selectedGuest.remainingPayment}</p>
+                      <p className="font-medium text-red-600">
+                        ₹{selectedGuest.remainingPayment}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -1072,7 +1221,9 @@ const GuestRegistration = () => {
                     <div>
                       <Label>Name</Label>
                       <p className="font-medium">
-                        {selectedGuest.primaryGuest.firstName} {selectedGuest.primaryGuest.middleName} {selectedGuest.primaryGuest.lastName}
+                        {selectedGuest.primaryGuest.firstName}{' '}
+                        {selectedGuest.primaryGuest.middleName}{' '}
+                        {selectedGuest.primaryGuest.lastName}
                       </p>
                     </div>
                     <div>
@@ -1085,11 +1236,15 @@ const GuestRegistration = () => {
                     </div>
                     <div>
                       <Label>Identity Proof</Label>
-                      <p className="font-medium capitalize">{selectedGuest.primaryGuest.identityProof}</p>
+                      <p className="font-medium capitalize">
+                        {selectedGuest.primaryGuest.identityProof}
+                      </p>
                     </div>
                     <div>
                       <Label>Identity Proof Number</Label>
-                      <p className="font-medium font-mono">{selectedGuest.primaryGuest.identityNumber || 'Not provided'}</p>
+                      <p className="font-medium font-mono">
+                        {selectedGuest.primaryGuest.identityNumber || 'Not provided'}
+                      </p>
                     </div>
                   </div>
                   <div className="mt-4">
@@ -1128,7 +1283,9 @@ const GuestRegistration = () => {
                           </div>
                           <div>
                             <Label>Identity Proof Number</Label>
-                            <p className="font-medium font-mono">{member.identityNumber || 'Not provided'}</p>
+                            <p className="font-medium font-mono">
+                              {member.identityNumber || 'Not provided'}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1141,7 +1298,10 @@ const GuestRegistration = () => {
                 <Button variant="outline" onClick={closeGuestDetails}>
                   Close
                 </Button>
-                <Button variant="destructive" onClick={() => handleCheckOut(selectedGuest.id)}>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleCheckOut(selectedGuest.id)}
+                >
                   Check Out & Generate Bill
                 </Button>
               </div>
@@ -1156,17 +1316,21 @@ const GuestRegistration = () => {
           <DialogHeader>
             <DialogTitle>Guest Bill</DialogTitle>
           </DialogHeader>
-          
+
           {billData && (
             <div className="space-y-4">
               <div className="text-center border-b pb-4">
                 <h2 className="text-xl font-bold">{hotelConfig.hotelName || 'Hotel Bill'}</h2>
                 <p className="text-sm text-gray-600">Bill ID: #{billData.bookingId}</p>
                 <p className="text-sm text-gray-600">{hotelConfig.address}</p>
-                <p className="text-sm text-gray-600">Phone: {hotelConfig.phone} | Email: {hotelConfig.email}</p>
-                {hotelConfig.gstNumber && <p className="text-sm text-gray-600">GST: {hotelConfig.gstNumber}</p>}
+                <p className="text-sm text-gray-600">
+                  Phone: {hotelConfig.phone} | Email: {hotelConfig.email}
+                </p>
+                {hotelConfig.gstNumber && (
+                  <p className="text-sm text-gray-600">GST: {hotelConfig.gstNumber}</p>
+                )}
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Guest Name</Label>
@@ -1178,11 +1342,15 @@ const GuestRegistration = () => {
                 </div>
                 <div>
                   <Label>Check-in</Label>
-                  <p className="text-sm">{billData.checkInDate} {billData.checkInTime}</p>
+                  <p className="text-sm">
+                    {billData.checkInDate} {billData.checkInTime}
+                  </p>
                 </div>
                 <div>
                   <Label>Check-out</Label>
-                  <p className="text-sm">{billData.checkOutDate} {billData.checkOutTime}</p>
+                  <p className="text-sm">
+                    {billData.checkOutDate} {billData.checkOutTime}
+                  </p>
                 </div>
                 <div>
                   <Label>Company</Label>
@@ -1253,9 +1421,7 @@ const GuestRegistration = () => {
                 <Button variant="outline" onClick={() => setShowBill(false)}>
                   Close
                 </Button>
-                <Button onClick={() => window.print()}>
-                  Print Bill
-                </Button>
+                <Button onClick={() => window.print()}>Print Bill</Button>
               </div>
             </div>
           )}

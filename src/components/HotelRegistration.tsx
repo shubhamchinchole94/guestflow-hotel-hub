@@ -1,12 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Upload, X, Plus, Hotel } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Upload, X, Plus, Minus } from 'lucide-react';
+import hotel from '@/services/hotel';
+
 
 const HotelRegistration = () => {
   const [hotelConfig, setHotelConfig] = useState({
@@ -32,35 +33,21 @@ const HotelRegistration = () => {
     }
   });
 
+
   const [logoPreview, setLogoPreview] = useState<string>('');
 
-  useEffect(() => {
-    const savedConfig = localStorage.getItem('hotelConfig');
-    if (savedConfig) {
-      const config = JSON.parse(savedConfig);
-      setHotelConfig(prev => ({ 
-        ...prev, 
-        ...config,
-        enabledMealPlans: config.enabledMealPlans || {
-          breakfast: true,
-          lunch: true,
-          dinner: true
-        }
-      }));
-      if (config.logoUrl) {
-        setLogoPreview(config.logoUrl);
-      }
-    }
-  }, []);
-
   const handleLogoUpload = (file: File) => {
-    setHotelConfig(prev => ({ ...prev, hotelLogo: file }));
-    const reader = new FileReader();
-    reader.onload = () => {
-      setLogoPreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    const base64DataUrl = reader.result as string; // this includes data:image/png;base64,...
+    setLogoPreview(base64DataUrl);
+
+    // Save this complete value to backend (and MongoDB)
+    setHotelConfig(prev => ({ ...prev, logoUrl: base64DataUrl }));
   };
+  reader.readAsDataURL(file); // This is important!
+};
+
 
   const addRoomType = () => {
     setHotelConfig(prev => ({
@@ -68,6 +55,37 @@ const HotelRegistration = () => {
       roomTypes: [...prev.roomTypes, { name: '', price: 0 }]
     }));
   };
+
+  useEffect(() => {
+  const fetchHotel = async () => {
+    try {
+      const res = await hotel.getHotelConfig();
+      if (res.data && res.data.length > 0) {
+        const config = res.data[0]; // Get the first (only) hotel
+
+        // Fix logoUrl if it’s raw base64 (i.e. missing prefix)
+        let logoPreview = "";
+        if (config.logoUrl) {
+          logoPreview = config.logoUrl.startsWith("data:image")
+            ? config.logoUrl
+            : `data:image/png;base64,${config.logoUrl}`;
+        }
+
+        // Set hotel config and preview
+        setHotelConfig({
+          ...config,
+          hotelLogo: null, // File input must remain null
+        });
+        setLogoPreview(logoPreview);
+      }
+    } catch (error) {
+      console.error("Failed to fetch hotel config", error);
+    }
+  };
+
+  fetchHotel();
+}, []);
+
 
   const removeRoomType = (index: number) => {
     if (hotelConfig.roomTypes.length > 1) {
@@ -88,26 +106,42 @@ const HotelRegistration = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const configToSave = {
-      ...hotelConfig,
-      logoUrl: logoPreview
-    };
-    
-    localStorage.setItem('hotelConfig', JSON.stringify(configToSave));
-    
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  const formData = new FormData();
+
+  formData.append('hotelData', new Blob([JSON.stringify({
+    ...hotelConfig
+  })], { type: 'application/json' }));
+
+  if (hotelConfig.hotelLogo) {
+    formData.append('logo', hotelConfig.hotelLogo);
+  }
+
+  try {
+    await hotel.saveOrUpdateHotel(formData); // Send FormData
+
     toast({
       title: "Hotel Configuration Saved",
-      description: "Your hotel settings have been updated successfully"
+      description: "Your hotel settings have been successfully sent.",
     });
-  };
+  } catch (error) {
+    console.error("Error saving hotel config", error);
+    toast({
+      title: "Save Failed",
+      description: "There was an error saving the configuration.",
+      variant: "destructive",
+    });
+  }
+};
+
+
+
 
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold">Hotel Configuration</h2>
-      
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
         <Card>
@@ -116,146 +150,65 @@ const HotelRegistration = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="form-group">
+              <div>
                 <Label htmlFor="hotelName">Hotel Name</Label>
-                <Input
-                  id="hotelName"
-                  value={hotelConfig.hotelName}
-                  onChange={e => setHotelConfig(prev => ({ ...prev, hotelName: e.target.value }))}
-                  required
-                />
+                <Input id="hotelName" value={hotelConfig.hotelName} onChange={e => setHotelConfig(prev => ({ ...prev, hotelName: e.target.value }))} required />
               </div>
-              <div className="form-group">
+              <div>
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={hotelConfig.phone}
-                  onChange={e => setHotelConfig(prev => ({ ...prev, phone: e.target.value }))}
-                  required
-                />
+                <Input id="phone" value={hotelConfig.phone} onChange={e => setHotelConfig(prev => ({ ...prev, phone: e.target.value }))} required />
               </div>
-              <div className="form-group">
+              <div>
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={hotelConfig.email}
-                  onChange={e => setHotelConfig(prev => ({ ...prev, email: e.target.value }))}
-                  required
-                />
+                <Input id="email" type="email" value={hotelConfig.email} onChange={e => setHotelConfig(prev => ({ ...prev, email: e.target.value }))} required />
               </div>
-              <div className="form-group">
+              <div>
                 <Label htmlFor="gstNumber">GST Number</Label>
-                <Input
-                  id="gstNumber"
-                  value={hotelConfig.gstNumber}
-                  onChange={e => setHotelConfig(prev => ({ ...prev, gstNumber: e.target.value }))}
-                />
+                <Input id="gstNumber" value={hotelConfig.gstNumber} onChange={e => setHotelConfig(prev => ({ ...prev, gstNumber: e.target.value }))} />
               </div>
             </div>
-            
-            <div className="form-group">
+            <div>
               <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                value={hotelConfig.address}
-                onChange={e => setHotelConfig(prev => ({ ...prev, address: e.target.value }))}
-                required
-              />
+              <Input id="address" value={hotelConfig.address} onChange={e => setHotelConfig(prev => ({ ...prev, address: e.target.value }))} required />
             </div>
           </CardContent>
         </Card>
 
-        {/* Hotel Logo and Property Details */}
+        {/* Logo & Details */}
         <Card>
-          <CardHeader>
-            <CardTitle>Hotel Logo & Property Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-              {/* Hotel Logo Section */}
-              <div className="space-y-4">
-                <Label>Hotel Logo</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <input
-                    type="file"
-                    id="logo-upload"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        handleLogoUpload(e.target.files[0]);
-                      }
-                    }}
-                  />
-                  {logoPreview ? (
-                    <div className="space-y-2">
-                      <img 
-                        src={logoPreview} 
-                        alt="Hotel Logo" 
-                        className="mx-auto h-24 w-24 object-contain rounded"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => document.getElementById('logo-upload')?.click()}
-                      >
-                        Change Logo
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Upload className="h-12 w-12 mx-auto text-gray-400" />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('logo-upload')?.click()}
-                      >
-                        Upload Logo
-                      </Button>
-                    </div>
-                  )}
+          <CardHeader><CardTitle>Hotel Logo & Property Details</CardTitle></CardHeader>
+          <CardContent className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <Label>Hotel Logo</Label>
+              <div className="border-2 border-dashed border-gray-300 p-6 text-center rounded-lg">
+                <input type="file" id="logo-upload" className="hidden" accept="image/*" onChange={e => e.target.files?.[0] && handleLogoUpload(e.target.files[0])} />
+                {logoPreview ? (
+                  <>
+                    <img src={logoPreview} alt="Logo" className="h-24 w-24 mx-auto object-contain rounded" />
+                    <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('logo-upload')?.click()}>Change Logo</Button>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-12 w-12 mx-auto text-gray-400" />
+                    <Button type="button" variant="outline" onClick={() => document.getElementById('logo-upload')?.click()}>Upload Logo</Button>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="totalFloors">Total Floors</Label>
+                  <Input id="totalFloors" type="number" min="1" value={hotelConfig.totalFloors} onChange={e => setHotelConfig(prev => ({ ...prev, totalFloors: parseInt(e.target.value) }))} required />
+                </div>
+                <div>
+                  <Label htmlFor="roomsPerFloor">Rooms per Floor</Label>
+                  <Input id="roomsPerFloor" type="number" min="1" value={hotelConfig.roomsPerFloor} onChange={e => setHotelConfig(prev => ({ ...prev, roomsPerFloor: parseInt(e.target.value) }))} required />
                 </div>
               </div>
-
-              {/* Property Details Section */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="form-group">
-                    <Label htmlFor="totalFloors">Total Floors</Label>
-                    <Input
-                      id="totalFloors"
-                      type="number"
-                      min="1"
-                      value={hotelConfig.totalFloors}
-                      onChange={e => setHotelConfig(prev => ({ ...prev, totalFloors: parseInt(e.target.value) }))}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <Label htmlFor="roomsPerFloor">Rooms per Floor</Label>
-                    <Input
-                      id="roomsPerFloor"
-                      type="number"
-                      min="1"
-                      value={hotelConfig.roomsPerFloor}
-                      onChange={e => setHotelConfig(prev => ({ ...prev, roomsPerFloor: parseInt(e.target.value) }))}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="form-group">
-                  <Label htmlFor="extraBedPrice">Extra Bed Price (₹)</Label>
-                  <Input
-                    id="extraBedPrice"
-                    type="number"
-                    min="0"
-                    value={hotelConfig.extraBedPrice}
-                    onChange={e => setHotelConfig(prev => ({ ...prev, extraBedPrice: parseInt(e.target.value) || 0 }))}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="extraBedPrice">Extra Bed Price (₹)</Label>
+                <Input id="extraBedPrice" type="number" min="0" value={hotelConfig.extraBedPrice} onChange={e => setHotelConfig(prev => ({ ...prev, extraBedPrice: parseInt(e.target.value) || 0 }))} />
               </div>
             </div>
           </CardContent>
@@ -263,42 +216,19 @@ const HotelRegistration = () => {
 
         {/* Room Types */}
         <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Room Types</CardTitle>
-              <Button type="button" onClick={addRoomType} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Room Type
-              </Button>
-            </div>
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle>Room Types</CardTitle>
+            <Button type="button" onClick={addRoomType} size="sm">
+              <Plus className="h-4 w-4 mr-1" /> Add Room Type
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {hotelConfig.roomTypes.map((roomType, index) => (
-              <div key={index} className="flex items-center space-x-4 p-4 border rounded-lg">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Room type name (e.g., Deluxe, Standard)"
-                    value={roomType.name}
-                    onChange={e => updateRoomType(index, 'name', e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input
-                    type="number"
-                    placeholder="Price per night"
-                    value={roomType.price}
-                    onChange={e => updateRoomType(index, 'price', parseInt(e.target.value) || 0)}
-                    required
-                  />
-                </div>
+            {hotelConfig.roomTypes.map((room, index) => (
+              <div key={index} className="flex gap-4 items-center">
+                <Input placeholder="Room type name" value={room.name} onChange={e => updateRoomType(index, 'name', e.target.value)} required />
+                <Input type="number" placeholder="Price" value={room.price} onChange={e => updateRoomType(index, 'price', parseInt(e.target.value) || 0)} required />
                 {hotelConfig.roomTypes.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => removeRoomType(index)}
-                  >
+                  <Button type="button" size="sm" variant="destructive" onClick={() => removeRoomType(index)}>
                     <X className="h-4 w-4" />
                   </Button>
                 )}
@@ -309,113 +239,46 @@ const HotelRegistration = () => {
 
         {/* Meal Plans */}
         <Card>
-          <CardHeader>
-            <CardTitle>Meal Plans Configuration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="form-group">
-                <Label className="text-base font-medium mb-4 block">Enable Meal Plans (Select which meals to offer to guests)</Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="checkbox-wrapper">
-                    <Checkbox
-                      id="enableBreakfast"
-                      checked={hotelConfig.enabledMealPlans.breakfast}
-                      onCheckedChange={(checked) => setHotelConfig(prev => ({
-                        ...prev,
-                        enabledMealPlans: { ...prev.enabledMealPlans, breakfast: !!checked }
-                      }))}
-                    />
-                    <Label htmlFor="enableBreakfast" className="text-sm font-medium">
-                      Enable Breakfast
-                    </Label>
-                  </div>
-                  
-                  <div className="checkbox-wrapper">
-                    <Checkbox
-                      id="enableLunch"
-                      checked={hotelConfig.enabledMealPlans.lunch}
-                      onCheckedChange={(checked) => setHotelConfig(prev => ({
-                        ...prev,
-                        enabledMealPlans: { ...prev.enabledMealPlans, lunch: !!checked }
-                      }))}
-                    />
-                    <Label htmlFor="enableLunch" className="text-sm font-medium">
-                      Enable Lunch
-                    </Label>
-                  </div>
-                  
-                  <div className="checkbox-wrapper">
-                    <Checkbox
-                      id="enableDinner"
-                      checked={hotelConfig.enabledMealPlans.dinner}
-                      onCheckedChange={(checked) => setHotelConfig(prev => ({
-                        ...prev,
-                        enabledMealPlans: { ...prev.enabledMealPlans, dinner: !!checked }
-                      }))}
-                    />
-                    <Label htmlFor="enableDinner" className="text-sm font-medium">
-                      Enable Dinner
-                    </Label>
-                  </div>
+          <CardHeader><CardTitle>Meal Plans</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-3 gap-4">
+              {(['breakfast', 'lunch', 'dinner'] as const).map(meal => (
+                <div key={meal} className="flex gap-2 items-center">
+                  <Checkbox
+                    id={`enable-${meal}`}
+                    checked={hotelConfig.enabledMealPlans[meal]}
+                    onCheckedChange={checked => setHotelConfig(prev => ({
+                      ...prev,
+                      enabledMealPlans: { ...prev.enabledMealPlans, [meal]: !!checked }
+                    }))}
+                  />
+                  <Label htmlFor={`enable-${meal}`}>Enable {meal.charAt(0).toUpperCase() + meal.slice(1)}</Label>
                 </div>
-              </div>
-
-              <div className="form-group">
-                <Label className="text-base font-medium mb-4 block">Meal Pricing</Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="form-group">
-                    <Label htmlFor="breakfastPrice">Breakfast Price (₹)</Label>
-                    <Input
-                      id="breakfastPrice"
-                      type="number"
-                      min="0"
-                      value={hotelConfig.mealPrices.breakfast}
-                      onChange={e => setHotelConfig(prev => ({
-                        ...prev,
-                        mealPrices: { ...prev.mealPrices, breakfast: parseInt(e.target.value) || 0 }
-                      }))}
-                      disabled={!hotelConfig.enabledMealPlans.breakfast}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <Label htmlFor="lunchPrice">Lunch Price (₹)</Label>
-                    <Input
-                      id="lunchPrice"
-                      type="number"
-                      min="0"
-                      value={hotelConfig.mealPrices.lunch}
-                      onChange={e => setHotelConfig(prev => ({
-                        ...prev,
-                        mealPrices: { ...prev.mealPrices, lunch: parseInt(e.target.value) || 0 }
-                      }))}
-                      disabled={!hotelConfig.enabledMealPlans.lunch}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <Label htmlFor="dinnerPrice">Dinner Price (₹)</Label>
-                    <Input
-                      id="dinnerPrice"
-                      type="number"
-                      min="0"
-                      value={hotelConfig.mealPrices.dinner}
-                      onChange={e => setHotelConfig(prev => ({
-                        ...prev,
-                        mealPrices: { ...prev.mealPrices, dinner: parseInt(e.target.value) || 0 }
-                      }))}
-                      disabled={!hotelConfig.enabledMealPlans.dinner}
-                    />
-                  </div>
+              ))}
+            </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              {(['breakfast', 'lunch', 'dinner'] as const).map(meal => (
+                <div key={meal}>
+                  <Label htmlFor={`${meal}Price`}>{meal.charAt(0).toUpperCase() + meal.slice(1)} Price (₹)</Label>
+                  <Input
+                    id={`${meal}Price`}
+                    type="number"
+                    min="0"
+                    value={hotelConfig.mealPrices[meal]}
+                    onChange={e => setHotelConfig(prev => ({
+                      ...prev,
+                      mealPrices: { ...prev.mealPrices, [meal]: parseInt(e.target.value) || 0 }
+                    }))}
+                    disabled={!hotelConfig.enabledMealPlans[meal]}
+                  />
                 </div>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
-        <div className="button-group">
-          <Button type="submit" size="lg">
-            Save Hotel Configuration
-          </Button>
+        <div className="text-right">
+          <Button type="submit" size="lg">Save Hotel Configuration</Button>
         </div>
       </form>
     </div>

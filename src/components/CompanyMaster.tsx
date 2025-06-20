@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Plus, X, Edit } from 'lucide-react';
+import CompanyService from '@/services/company';
 
 interface Company {
   id: string;
@@ -30,50 +30,45 @@ const CompanyMaster = () => {
   });
 
   useEffect(() => {
-    const savedCompanies = localStorage.getItem('companies');
-    if (savedCompanies) {
-      setCompanies(JSON.parse(savedCompanies));
-    }
+    fetchCompanies();
   }, []);
 
-  const saveCompanies = (updatedCompanies: Company[]) => {
-    setCompanies(updatedCompanies);
-    localStorage.setItem('companies', JSON.stringify(updatedCompanies));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (isEditing) {
-      const updatedCompanies = companies.map(company =>
-        company.id === isEditing ? { ...formData, id: isEditing } : company
-      );
-      saveCompanies(updatedCompanies);
+  const fetchCompanies = async () => {
+    try {
+      const response = await CompanyService.getAllCompanies();
+      setCompanies(response.data);
+    } catch (error) {
       toast({
-        title: "Success",
-        description: "Company updated successfully"
-      });
-    } else {
-      const newCompany: Company = {
-        ...formData,
-        id: Date.now().toString()
-      };
-      saveCompanies([...companies, newCompany]);
-      toast({
-        title: "Success",
-        description: "Company added successfully"
+        title: 'Error',
+        description: 'Failed to fetch companies',
+        variant: 'destructive',
       });
     }
+  };
 
-    setFormData({
-      companyName: '',
-      agentName: '',
-      agentNumber: '',
-      mailId: '',
-      gstPercentage: 18,
-      roomPriceDiscount: 0
-    });
-    setIsEditing(null);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      let response;
+      if (isEditing) {
+        response = await CompanyService.updateCompany(isEditing, formData);
+        setCompanies(prev => prev.map(c => (c.id === isEditing ? response : c)));
+        toast({ title: 'Success', description: 'Company updated successfully' });
+      } else {
+        response = await CompanyService.createCompany(formData);
+        setCompanies(prev => [...prev, response]);
+        toast({ title: 'Success', description: 'Company added successfully' });
+      }
+
+      resetForm();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.message || 'Failed to submit company',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleEdit = (company: Company) => {
@@ -88,13 +83,18 @@ const CompanyMaster = () => {
     setIsEditing(company.id);
   };
 
-  const handleDelete = (id: string) => {
-    const updatedCompanies = companies.filter(company => company.id !== id);
-    saveCompanies(updatedCompanies);
-    toast({
-      title: "Success",
-      description: "Company deleted successfully"
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await CompanyService.deleteCompany(id);
+      setCompanies(prev => prev.filter(company => company.id !== id));
+      toast({ title: 'Success', description: 'Company deleted successfully' });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.message || 'Failed to delete company',
+        variant: 'destructive',
+      });
+    }
   };
 
   const resetForm = () => {
@@ -110,9 +110,9 @@ const CompanyMaster = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <h2 className="text-3xl font-bold">Company / Marketplace Master</h2>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>{isEditing ? 'Edit Company' : 'Add New Company'}</CardTitle>
@@ -181,7 +181,7 @@ const CompanyMaster = () => {
                 />
               </div>
             </div>
-            
+
             <div className="flex space-x-2">
               <Button type="submit">
                 {isEditing ? 'Update Company' : 'Add Company'}
@@ -225,18 +225,10 @@ const CompanyMaster = () => {
                     <td className="border border-gray-300 p-2">{company.roomPriceDiscount}%</td>
                     <td className="border border-gray-300 p-2">
                       <div className="flex space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(company)}
-                        >
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(company)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(company.id)}
-                        >
+                        <Button size="sm" variant="destructive" onClick={() => handleDelete(company.id)}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
