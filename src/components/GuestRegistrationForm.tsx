@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,8 @@ import FamilyMembers from './FamilyMembers';
 import AdditionalServices from './AdditionalServices';
 import MealPlan from './MealPlan';
 import BillingSummary from './BillingSummary';
+import GuestDetailsView from './GuestDetailsView';
+import BillModal from './BillModal';
 
 interface GuestRegistrationFormProps {
   isOpen: boolean;
@@ -33,6 +34,12 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
   companies,
   hotelConfig,
 }) => {
+  const {
+    isGuestDetailsOpen,
+    selectedGuest,
+    closeGuestDetails,
+  } = useGuestStore();
+
   const [formData, setFormData] = useState({
     primaryGuest: {
       firstName: '',
@@ -68,6 +75,8 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
 
   const [dragActive, setDragActive] = useState(false);
   const [imagePreview, setImagePreview] = useState<{ [key: string]: string }>({});
+  const [showBill, setShowBill] = useState(false);
+  const [billData, setBillData] = useState<any>(null);
 
   useEffect(() => {
     if (isOpen && selectedDate && selectedRoom) {
@@ -381,6 +390,83 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
     setImagePreview({});
   };
 
+  const generateBill = (bookingData: any) => {
+    const selectedCompany = companies.find((c) => c.id === bookingData.companyId);
+    const extraBedCost = bookingData.extraBed ? bookingData.extraBedPrice : 0;
+    const mealCosts =
+      (bookingData.mealPlan?.breakfast ? hotelConfig.mealPrices?.breakfast || 0 : 0) +
+      (bookingData.mealPlan?.lunch ? hotelConfig.mealPrices?.lunch || 0 : 0) +
+      (bookingData.mealPlan?.dinner ? hotelConfig.mealPrices?.dinner || 0 : 0);
+
+    const totalFare = bookingData.farePerNight + extraBedCost + mealCosts;
+
+    let finalFare = totalFare;
+    let appliedDiscount = 0;
+    let gstRate = 0;
+    let gstAmount = 0;
+
+    if (selectedCompany) {
+      appliedDiscount = (totalFare * selectedCompany.roomPriceDiscount) / 100;
+      finalFare = totalFare - appliedDiscount;
+      gstRate = selectedCompany.gstPercentage;
+      gstAmount = (finalFare * gstRate) / 100;
+    }
+
+    const bill = {
+      bookingId: bookingData.id,
+      guestName: `${bookingData.primaryGuest.firstName} ${bookingData.primaryGuest.lastName}`,
+      roomNumber: bookingData.roomNumber,
+      checkInDate: bookingData.checkInDate,
+      checkInTime: bookingData.checkInTime,
+      checkOutDate: bookingData.checkOutDate,
+      checkOutTime: bookingData.checkOutTime,
+      baseFare: bookingData.farePerNight,
+      extraBedCost,
+      mealCosts,
+      totalBeforeDiscount: totalFare,
+      discountAmount: appliedDiscount,
+      discountPercentage: selectedCompany?.roomPriceDiscount || 0,
+      finalFare,
+      gstRate,
+      gstAmount,
+      grandTotal: finalFare + gstAmount,
+      advancePayment: bookingData.advancePayment,
+      remainingPayment: finalFare + gstAmount - bookingData.advancePayment,
+      companyName: selectedCompany?.companyName || 'Walk-in Guest',
+      generatedAt: new Date().toISOString(),
+    };
+
+    setBillData(bill);
+    setShowBill(true);
+  };
+
+  const handleCheckOut = async (bookingId: string) => {
+    try {
+      const response = await GuestRegistrationService.getRegistrationById(bookingId);
+      const booking = response.data;
+
+      if (booking) {
+        generateBill(booking);
+        await GuestRegistrationService.deleteRegistration(bookingId);
+
+        toast({
+          title: 'Check-out Successful',
+          description: 'Guest has been checked out. Room is now in cleaning mode.',
+        });
+      }
+
+      closeGuestDetails();
+      window.dispatchEvent(new CustomEvent('refreshDashboard'));
+    } catch (error) {
+      console.error('Error during check-out:', error);
+      toast({
+        title: 'Check-out Failed',
+        description: 'An error occurred during check-out',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const FileUploadArea = ({
     isPrimary = true,
     memberIndex,
@@ -451,85 +537,101 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Guest Registration - Room {selectedRoom}</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Guest Registration - Room {selectedRoom}</DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Company Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Company / Marketplace</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="form-group">
-                <Label>Select Company (Optional)</Label>
-                <select
-                  value={formData.companyId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, companyId: e.target.value }))
-                  }
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
-                >
-                  <option value="">Walk-in Guest</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.companyName} - {company.roomPriceDiscount}% discount
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </CardContent>
-          </Card>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Company Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Company / Marketplace</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="form-group">
+                  <Label>Select Company (Optional)</Label>
+                  <select
+                    value={formData.companyId}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, companyId: e.target.value }))
+                    }
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  >
+                    <option value="">Walk-in Guest</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.companyName} - {company.roomPriceDiscount}% discount
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </CardContent>
+            </Card>
 
-          <PrimaryGuestDetails
-            primaryGuest={formData.primaryGuest}
-            setFormData={setFormData}
-            imagePreview={imagePreview}
-            handleMobileChange={handleMobileChange}
-            handleFileUpload={handleFileUpload}
-            handleDrag={handleDrag}
-            handleDrop={handleDrop}
-            dragActive={dragActive}
-          />
+            <PrimaryGuestDetails
+              primaryGuest={formData.primaryGuest}
+              setFormData={setFormData}
+              imagePreview={imagePreview}
+              handleMobileChange={handleMobileChange}
+              handleFileUpload={handleFileUpload}
+              handleDrag={handleDrag}
+              handleDrop={handleDrop}
+              dragActive={dragActive}
+            />
 
-          <FamilyMembers
-            familyMembers={formData.familyMembers}
-            setFormData={setFormData}
-            FileUploadArea={FileUploadArea}
-          />
+            <FamilyMembers
+              familyMembers={formData.familyMembers}
+              setFormData={setFormData}
+              FileUploadArea={FileUploadArea}
+            />
 
-          <AdditionalServices
-            formData={formData}
-            setFormData={setFormData}
-            hotelConfig={hotelConfig}
-          />
+            <AdditionalServices
+              formData={formData}
+              setFormData={setFormData}
+              hotelConfig={hotelConfig}
+            />
 
-          <MealPlan
-            mealPlan={formData.mealPlan}
-            setFormData={setFormData}
-            hotelConfig={hotelConfig}
-          />
+            <MealPlan
+              mealPlan={formData.mealPlan}
+              setFormData={setFormData}
+              hotelConfig={hotelConfig}
+            />
 
-          <BillingSummary
-            formData={formData}
-            setFormData={setFormData}
-            companies={companies}
-            hotelConfig={hotelConfig}
-            calculateMealCosts={calculateMealCosts}
-          />
+            <BillingSummary
+              formData={formData}
+              setFormData={setFormData}
+              companies={companies}
+              hotelConfig={hotelConfig}
+              calculateMealCosts={calculateMealCosts}
+            />
 
-          <div className="flex justify-center space-x-4 pt-6">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">Confirm Booking</Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <div className="flex justify-center space-x-4 pt-6">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit">Confirm Booking</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <GuestDetailsView
+        isOpen={isGuestDetailsOpen}
+        onClose={closeGuestDetails}
+        selectedGuest={selectedGuest}
+        onCheckOut={handleCheckOut}
+      />
+
+      <BillModal
+        isOpen={showBill}
+        onClose={() => setShowBill(false)}
+        billData={billData}
+        hotelConfig={hotelConfig}
+      />
+    </>
   );
 };
 
