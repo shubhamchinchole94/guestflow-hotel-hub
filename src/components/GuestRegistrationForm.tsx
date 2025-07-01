@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { useGuestStore } from '@/store/guestStore';
 import { format } from 'date-fns';
+import { Upload, Eye } from 'lucide-react';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
 import PrimaryGuestDetails from './PrimaryGuestDetails';
 import FamilyMembers from './FamilyMembers';
