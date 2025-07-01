@@ -1,16 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { useGuestStore } from '@/store/guestStore';
 import { format } from 'date-fns';
-import { Upload, Eye } from 'lucide-react';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
+import PrimaryGuestDetails from './PrimaryGuestDetails';
 import FamilyMembers from './FamilyMembers';
 import AdditionalServices from './AdditionalServices';
 import MealPlan from './MealPlan';
@@ -428,7 +426,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
               alt="Identity proof preview"
               className="w-full h-32 object-cover rounded-lg border"
             />
-            <Button
+             <Button
               type="button"
               variant="secondary"
               size="sm"
@@ -484,135 +482,16 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
             </CardContent>
           </Card>
 
-          {/* Primary Guest Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Primary Guest Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="form-group">
-                  <Label>First Name</Label>
-                  <Input
-                    value={formData.primaryGuest.firstName}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, firstName: e.target.value },
-                      }))
-                    }
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label>Middle Name</Label>
-                  <Input
-                    value={formData.primaryGuest.middleName}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, middleName: e.target.value },
-                      }))
-                    }
-                  />
-                </div>
-                <div className="form-group">
-                  <Label>Last Name</Label>
-                  <Input
-                    value={formData.primaryGuest.lastName}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, lastName: e.target.value },
-                      }))
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="form-group">
-                  <Label>Date of Birth</Label>
-                  <Input
-                    type="date"
-                    value={formData.primaryGuest.dob}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, dob: e.target.value },
-                      }))
-                    }
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label>Mobile Number</Label>
-                  <Input
-                    value={formData.primaryGuest.mobile}
-                    onChange={(e) => handleMobileChange(e.target.value)}
-                    maxLength={10}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <Label>Address</Label>
-                <Textarea
-                  value={formData.primaryGuest.address}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      primaryGuest: { ...prev.primaryGuest, address: e.target.value },
-                    }))
-                  }
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="form-group">
-                  <Label>Identity Proof Type</Label>
-                  <select
-                    value={formData.primaryGuest.identityProof}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, identityProof: e.target.value },
-                      }))
-                    }
-                    className="w-full rounded-md border border-input bg-background px-3 py-2"
-                    required
-                  >
-                    <option value="">Select Identity Proof</option>
-                    <option value="aadhar">Aadhar Card</option>
-                    <option value="pan">PAN Card</option>
-                    <option value="passport">Passport</option>
-                    <option value="voter">Voter ID</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <Label>Identity Proof Number</Label>
-                  <Input
-                    value={formData.primaryGuest.identityNumber}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        primaryGuest: { ...prev.primaryGuest, identityNumber: e.target.value },
-                      }))
-                    }
-                    placeholder="Enter ID number"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <Label>Upload Identity Proof</Label>
-                  <FileUploadArea isPrimary={true} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <PrimaryGuestDetails
+            primaryGuest={formData.primaryGuest}
+            setFormData={setFormData}
+            imagePreview={imagePreview}
+            handleMobileChange={handleMobileChange}
+            handleFileUpload={handleFileUpload}
+            handleDrag={handleDrag}
+            handleDrop={handleDrop}
+            dragActive={dragActive}
+          />
 
           <FamilyMembers
             familyMembers={formData.familyMembers}
