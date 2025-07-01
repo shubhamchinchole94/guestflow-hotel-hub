@@ -1,0 +1,655 @@
+
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from '@/hooks/use-toast';
+import { useGuestStore } from '@/store/guestStore';
+import { format } from 'date-fns';
+import { Upload, Eye } from 'lucide-react';
+import GuestRegistrationService from '@/services/GuestRegistrationService';
+import FamilyMembers from './FamilyMembers';
+import AdditionalServices from './AdditionalServices';
+import MealPlan from './MealPlan';
+import BillingSummary from './BillingSummary';
+
+interface GuestRegistrationFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedRoom: string | null;
+  selectedDate: Date | null;
+  companies: any[];
+  hotelConfig: any;
+}
+
+const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
+  isOpen,
+  onClose,
+  selectedRoom,
+  selectedDate,
+  companies,
+  hotelConfig,
+}) => {
+  const [formData, setFormData] = useState({
+    primaryGuest: {
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      dob: '',
+      mobile: '',
+      address: '',
+      identityProof: '',
+      identityNumber: '',
+      identityFile: null as File | null,
+    },
+    familyMembers: [] as any[],
+    checkInTime: '',
+    checkOutTime: '',
+    checkInDate: '',
+    checkOutDate: '',
+    stayDuration: '12hr',
+    farePerNight: 0,
+    advancePayment: 0,
+    remainingPayment: 0,
+    companyId: '',
+    extraBed: false,
+    extraBedPrice: 0,
+    mealPlan: {
+      breakfast: false,
+      lunch: false,
+      dinner: false,
+    },
+    wakeUpCall: '',
+    wakeUpCallTime: '',
+  });
+
+  const [dragActive, setDragActive] = useState(false);
+  const [imagePreview, setImagePreview] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    if (isOpen && selectedDate && selectedRoom) {
+      const roomInfo = getRoomInfo(selectedRoom);
+      const checkInDate = format(selectedDate, 'yyyy-MM-dd');
+      const checkInTime = format(new Date(), 'HH:mm');
+      let checkOutDate = checkInDate;
+      let checkOutTime = checkInTime;
+
+      if (formData.stayDuration === '12hr') {
+        checkOutTime = '12:00';
+        const nextDay = new Date(selectedDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        checkOutDate = format(nextDay, 'yyyy-MM-dd');
+      } else {
+        const checkOutDateTime = new Date(selectedDate);
+        checkOutDateTime.setHours(checkOutDateTime.getHours() + 24);
+        checkOutDate = format(checkOutDateTime, 'yyyy-MM-dd');
+        checkOutTime = checkInTime;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        checkInDate,
+        checkInTime,
+        checkOutDate,
+        checkOutTime,
+        farePerNight: roomInfo?.price || 1000,
+        extraBedPrice: hotelConfig.extraBedPrice || 0,
+      }));
+    }
+  }, [isOpen, selectedDate, selectedRoom, formData.stayDuration, hotelConfig]);
+
+  useEffect(() => {
+    const extraBedCost = formData.extraBed ? formData.extraBedPrice : 0;
+    const mealCosts = calculateMealCosts();
+    const totalFare = formData.farePerNight + extraBedCost + mealCosts;
+
+    let finalFare = totalFare;
+    let appliedDiscount = 0;
+
+    if (formData.companyId) {
+      const selectedCompany = companies.find((c) => c.id === formData.companyId);
+      if (selectedCompany) {
+        appliedDiscount = (totalFare * selectedCompany.roomPriceDiscount) / 100;
+        finalFare = totalFare - appliedDiscount;
+      }
+    }
+
+    const remaining = finalFare - formData.advancePayment;
+    setFormData((prev) => ({
+      ...prev,
+      remainingPayment: Math.max(0, remaining),
+    }));
+  }, [
+    formData.farePerNight,
+    formData.advancePayment,
+    formData.extraBed,
+    formData.extraBedPrice,
+    formData.mealPlan,
+    formData.companyId,
+    companies,
+    hotelConfig,
+  ]);
+
+  const calculateMealCosts = () => {
+    let total = 0;
+    if (
+      formData.mealPlan.breakfast &&
+      hotelConfig.mealPrices?.breakfast &&
+      hotelConfig.enabledMealPlans?.breakfast
+    ) {
+      total += hotelConfig.mealPrices.breakfast;
+    }
+    if (
+      formData.mealPlan.lunch &&
+      hotelConfig.mealPrices?.lunch &&
+      hotelConfig.enabledMealPlans?.lunch
+    ) {
+      total += hotelConfig.mealPrices.lunch;
+    }
+    if (
+      formData.mealPlan.dinner &&
+      hotelConfig.mealPrices?.dinner &&
+      hotelConfig.enabledMealPlans?.dinner
+    ) {
+      total += hotelConfig.mealPrices.dinner;
+    }
+    return total;
+  };
+
+  const getRoomInfo = (roomNumber: string) => {
+    return { price: 1000, type: 'Regular' };
+  };
+
+  const checkExistingGuest = async (mobile: string) => {
+    try {
+      const response = await GuestRegistrationService.getAllRegistrations();
+      const bookings = response.data;
+      const existingBooking = bookings.find(
+        (booking: any) => booking.primaryGuest.mobile === mobile
+      );
+      if (existingBooking) {
+        setFormData((prev) => ({
+          ...prev,
+          primaryGuest: {
+            ...prev.primaryGuest,
+            ...existingBooking.primaryGuest,
+            mobile,
+          },
+        }));
+        toast({
+          title: 'Returning Guest',
+          description: 'Guest details loaded from previous booking',
+        });
+      }
+    } catch (error) {
+      console.error('Error checking existing guest:', error);
+    }
+  };
+
+  const handleMobileChange = (mobile: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      primaryGuest: { ...prev.primaryGuest, mobile },
+    }));
+    if (mobile.length === 10) {
+      checkExistingGuest(mobile);
+    }
+  };
+
+  const handleFileUpload = (
+    file: File,
+    isPrimary: boolean = true,
+    memberIndex?: number
+  ) => {
+    if (isPrimary) {
+      setFormData((prev) => ({
+        ...prev,
+        primaryGuest: { ...prev.primaryGuest, identityFile: file },
+      }));
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImagePreview((prev) => ({
+          ...prev,
+          primary: reader.result as string,
+        }));
+      };
+      reader.readAsDataURL(file);
+    } else if (memberIndex !== undefined) {
+      const updatedMembers = [...formData.familyMembers];
+      updatedMembers[memberIndex] = { ...updatedMembers[memberIndex], identityFile: file };
+      setFormData((prev) => ({ ...prev, familyMembers: updatedMembers }));
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImagePreview((prev) => ({
+          ...prev,
+          [`member-${memberIndex}`]: reader.result as string,
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+    toast({
+      title: 'File Uploaded',
+      description: `${file.name} uploaded successfully`,
+    });
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (
+    e: React.DragEvent,
+    isPrimary: boolean = true,
+    memberIndex?: number
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0], isPrimary, memberIndex);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const selectedCompany = companies.find((c) => c.id === formData.companyId);
+    const extraBedCost = formData.extraBed ? formData.extraBedPrice : 0;
+    const mealCosts = calculateMealCosts();
+    const totalFare = formData.farePerNight + extraBedCost + mealCosts;
+
+    let finalFare = totalFare;
+    let appliedDiscount = 0;
+    let gstRate = 0;
+
+    if (selectedCompany) {
+      appliedDiscount = (totalFare * selectedCompany.roomPriceDiscount) / 100;
+      finalFare = totalFare - appliedDiscount;
+      gstRate = selectedCompany.gstPercentage;
+    }
+
+    const booking = {
+      id: Date.now().toString(),
+      roomNumber: selectedRoom,
+      ...formData,
+      totalGuests: 1 + formData.familyMembers.length,
+      createdAt: new Date().toISOString(),
+      companyDetails: selectedCompany,
+      billing: {
+        baseFare: formData.farePerNight,
+        extraBedCost,
+        mealCosts,
+        totalBeforeDiscount: totalFare,
+        discountAmount: appliedDiscount,
+        discountPercentage: selectedCompany?.roomPriceDiscount || 0,
+        finalFare,
+        gstRate,
+        gstAmount: (finalFare * gstRate) / 100,
+        grandTotal: finalFare + (finalFare * gstRate) / 100,
+      },
+    };
+
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('booking', JSON.stringify(booking));
+
+      if (formData.primaryGuest.identityFile) {
+        formDataToSend.append('primaryIdentityFile', formData.primaryGuest.identityFile);
+      }
+
+      formData.familyMembers.forEach((member, index) => {
+        if (member.identityFile) {
+          formDataToSend.append(`familyMemberIdentityFile_${index}`, member.identityFile);
+        }
+      });
+
+      if (formData.wakeUpCall === 'yes' && formData.wakeUpCallTime) {
+        formDataToSend.append(
+          'wakeUpCall',
+          JSON.stringify({
+            roomNumber: selectedRoom,
+            time: formData.wakeUpCallTime,
+            date: formData.checkInDate,
+            guestName: `${formData.primaryGuest.firstName} ${formData.primaryGuest.lastName}`,
+            bookingId: booking.id,
+          })
+        );
+      }
+
+      await GuestRegistrationService.createRegistration(formDataToSend);
+
+      toast({
+        title: 'Booking Confirmed',
+        description: `Room ${selectedRoom} booked successfully`,
+      });
+
+      onClose();
+      resetForm();
+      window.dispatchEvent(new CustomEvent('refreshDashboard'));
+    } catch (error) {
+      console.error('Error creating registration:', error);
+      toast({
+        title: 'Booking Failed',
+        description: 'An error occurred while confirming the booking',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      primaryGuest: {
+        firstName: '',
+        middleName: '',
+        lastName: '',
+        dob: '',
+        mobile: '',
+        address: '',
+        identityProof: '',
+        identityNumber: '',
+        identityFile: null,
+      },
+      familyMembers: [],
+      checkInTime: '',
+      checkOutTime: '',
+      checkInDate: '',
+      checkOutDate: '',
+      stayDuration: '12hr',
+      farePerNight: 0,
+      advancePayment: 0,
+      remainingPayment: 0,
+      companyId: '',
+      extraBed: false,
+      extraBedPrice: 0,
+      mealPlan: {
+        breakfast: false,
+        lunch: false,
+        dinner: false,
+      },
+      wakeUpCall: '',
+      wakeUpCallTime: '',
+    });
+    setImagePreview({});
+  };
+
+  const FileUploadArea = ({
+    isPrimary = true,
+    memberIndex,
+  }: {
+    isPrimary?: boolean;
+    memberIndex?: number;
+  }) => {
+    const previewKey = isPrimary ? 'primary' : `member-${memberIndex}`;
+    const hasPreview = imagePreview[previewKey];
+
+    return (
+      <div className="space-y-2">
+        <div
+          className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+            dragActive ? 'border-primary bg-primary/10' : 'border-gray-300 hover:border-primary'
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={(e) => handleDrop(e, isPrimary, memberIndex)}
+          onClick={() =>
+            document.getElementById(`file-${isPrimary ? 'primary' : memberIndex}`)?.click()
+          }
+        >
+          <input
+            id={`file-${isPrimary ? 'primary' : memberIndex}`}
+            type="file"
+            className="hidden"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={(e) => {
+              if (e.target.files?.[0]) {
+                handleFileUpload(e.target.files[0], isPrimary, memberIndex);
+              }
+            }}
+          />
+          <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+          <p className="text-sm text-gray-600">Drag and drop identity proof or click to browse</p>
+          <p className="text-xs text-gray-400">Supports PDF, JPG, PNG files</p>
+        </div>
+
+        {hasPreview && (
+          <div className="relative">
+            <img
+              src={imagePreview[previewKey]}
+              alt="Identity proof preview"
+              className="w-full h-32 object-cover rounded-lg border"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="absolute top-2 right-2"
+              onClick={() => {
+                const newWindow = window.open();
+                if (newWindow) {
+                  newWindow.document.write(
+                    `<img src="${imagePreview[previewKey]}" style="max-width: 100%; max-height: 100%;" />`
+                  );
+                }
+              }}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Guest Registration - Room {selectedRoom}</DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Company Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Company / Marketplace</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="form-group">
+                <Label>Select Company (Optional)</Label>
+                <select
+                  value={formData.companyId}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, companyId: e.target.value }))
+                  }
+                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                >
+                  <option value="">Walk-in Guest</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.companyName} - {company.roomPriceDiscount}% discount
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Primary Guest Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Primary Guest Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="form-group">
+                  <Label>First Name</Label>
+                  <Input
+                    value={formData.primaryGuest.firstName}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        primaryGuest: { ...prev.primaryGuest, firstName: e.target.value },
+                      }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <Label>Middle Name</Label>
+                  <Input
+                    value={formData.primaryGuest.middleName}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        primaryGuest: { ...prev.primaryGuest, middleName: e.target.value },
+                      }))
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <Label>Last Name</Label>
+                  <Input
+                    value={formData.primaryGuest.lastName}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        primaryGuest: { ...prev.primaryGuest, lastName: e.target.value },
+                      }))
+                    }
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <Label>Date of Birth</Label>
+                  <Input
+                    type="date"
+                    value={formData.primaryGuest.dob}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        primaryGuest: { ...prev.primaryGuest, dob: e.target.value },
+                      }))
+                    }
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <Label>Mobile Number</Label>
+                  <Input
+                    value={formData.primaryGuest.mobile}
+                    onChange={(e) => handleMobileChange(e.target.value)}
+                    maxLength={10}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <Label>Address</Label>
+                <Textarea
+                  value={formData.primaryGuest.address}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      primaryGuest: { ...prev.primaryGuest, address: e.target.value },
+                    }))
+                  }
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="form-group">
+                  <Label>Identity Proof Type</Label>
+                  <select
+                    value={formData.primaryGuest.identityProof}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        primaryGuest: { ...prev.primaryGuest, identityProof: e.target.value },
+                      }))
+                    }
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                    required
+                  >
+                    <option value="">Select Identity Proof</option>
+                    <option value="aadhar">Aadhar Card</option>
+                    <option value="pan">PAN Card</option>
+                    <option value="passport">Passport</option>
+                    <option value="voter">Voter ID</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <Label>Identity Proof Number</Label>
+                  <Input
+                    value={formData.primaryGuest.identityNumber}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        primaryGuest: { ...prev.primaryGuest, identityNumber: e.target.value },
+                      }))
+                    }
+                    placeholder="Enter ID number"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <Label>Upload Identity Proof</Label>
+                  <FileUploadArea isPrimary={true} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <FamilyMembers
+            familyMembers={formData.familyMembers}
+            setFormData={setFormData}
+            FileUploadArea={FileUploadArea}
+          />
+
+          <AdditionalServices
+            formData={formData}
+            setFormData={setFormData}
+            hotelConfig={hotelConfig}
+          />
+
+          <MealPlan
+            mealPlan={formData.mealPlan}
+            setFormData={setFormData}
+            hotelConfig={hotelConfig}
+          />
+
+          <BillingSummary
+            formData={formData}
+            setFormData={setFormData}
+            companies={companies}
+            hotelConfig={hotelConfig}
+            calculateMealCosts={calculateMealCosts}
+          />
+
+          <div className="flex justify-center space-x-4 pt-6">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">Confirm Booking</Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default GuestRegistrationForm;
