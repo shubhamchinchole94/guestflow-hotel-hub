@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
+import GuestRegistrationService from '@/services/GuestRegistrationService';
 
 interface RoomTransferProps {
   isOpen: boolean;
@@ -31,59 +32,61 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber }: RoomTransferProps) 
     }
   }, [isOpen, targetRoomNumber]);
 
-  const loadRoomData = () => {
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    const roomStatuses = JSON.parse(localStorage.getItem('roomStatuses') || '{}');
-    const hotelConfig = JSON.parse(localStorage.getItem('hotelConfig') || '{}');
-    
-    // Get currently occupied rooms
-    const occupied = bookings.filter((booking: any) => {
-      const checkIn = new Date(booking.checkInDate);
-      const checkOut = new Date(booking.checkOutDate);
-      const today = new Date();
-      return today >= checkIn && today <= checkOut;
-    });
-    
-    setOccupiedRooms(occupied);
-    
-    // Get available rooms
-    const allRooms: string[] = [];
-    if (hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
-      for (let floor = 1; floor <= hotelConfig.totalFloors; floor++) {
-        for (let room = 1; room <= hotelConfig.roomsPerFloor; room++) {
+  const loadRoomData = async () => {
+    try {
+      // Get all bookings from the service
+      const response = await GuestRegistrationService.getAllRegistrations();
+      const bookings = response.data || [];
+      
+      // Get currently occupied rooms
+      const occupied = bookings.filter((booking: any) => {
+        const checkIn = new Date(booking.checkInDate);
+        const checkOut = new Date(booking.checkOutDate);
+        const today = new Date();
+        return today >= checkIn && today <= checkOut && booking.status === 'active';
+      });
+      
+      setOccupiedRooms(occupied);
+      
+      // Generate available rooms (this would ideally come from a hotel configuration service)
+      const allRooms: string[] = [];
+      for (let floor = 1; floor <= 3; floor++) {
+        for (let room = 1; room <= 10; room++) {
           const roomNumber = `${floor}0${room}`;
           allRooms.push(roomNumber);
         }
       }
+      
+      const available = allRooms.filter(roomNumber => {
+        const isOccupied = occupied.some((booking: any) => booking.roomNumber === roomNumber);
+        return !isOccupied;
+      });
+      
+      setAvailableRooms(available);
+    } catch (error) {
+      console.error('Error loading room data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load room data',
+      });
     }
-    
-    const available = allRooms.filter(roomNumber => {
-      const isOccupied = occupied.some((booking: any) => booking.roomNumber === roomNumber);
-      const status = roomStatuses[roomNumber];
-      return !isOccupied && status !== 'out-of-order' && status !== 'cleaning';
-    });
-    
-    setAvailableRooms(available);
   };
 
-  const handleTransfer = () => {
+  const handleTransfer = async () => {
     if (!selectedBooking || !newRoomNumber || !transferReason) {
       toast({
         title: "Missing Information",
         description: "Please fill all required fields",
-        variant: "destructive"
       });
       return;
     }
 
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    const selectedBookingData = bookings.find((b: any) => b.id.toString() === selectedBooking);
+    const selectedBookingData = occupiedRooms.find((b: any) => b.id.toString() === selectedBooking);
     
     if (!selectedBookingData) {
       toast({
         title: "Error",
         description: "Selected booking not found",
-        variant: "destructive"
       });
       return;
     }
@@ -94,62 +97,56 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber }: RoomTransferProps) 
       toast({
         title: "Room Not Available",
         description: "Selected room is no longer available",
-        variant: "destructive"
       });
       return;
     }
 
-    // Create transfer record
-    const transferRecord = {
-      id: Date.now(),
-      originalBookingId: selectedBookingData.id,
-      guestName: `${selectedBookingData.primaryGuest.firstName} ${selectedBookingData.primaryGuest.lastName}`,
-      fromRoom: selectedBookingData.roomNumber,
-      toRoom: newRoomNumber,
-      transferReason,
-      remarks,
-      transferredAt: new Date().toISOString(),
-      transferredBy: localStorage.getItem('username') || 'Unknown'
-    };
+    try {
+      // Create transfer record
+      const transferRecord = {
+        id: Date.now(),
+        originalBookingId: selectedBookingData.id,
+        guestName: `${selectedBookingData.primaryGuest.firstName} ${selectedBookingData.primaryGuest.lastName}`,
+        fromRoom: selectedBookingData.roomNumber,
+        toRoom: newRoomNumber,
+        transferReason,
+        remarks,
+        transferredAt: new Date().toISOString(),
+        transferredBy: 'Admin' // This would come from user session
+      };
 
-    // Update booking with new room number
-    const updatedBookings = bookings.map((booking: any) => {
-      if (booking.id.toString() === selectedBooking) {
-        return {
-          ...booking,
-          roomNumber: newRoomNumber,
-          transferHistory: [...(booking.transferHistory || []), transferRecord]
-        };
-      }
-      return booking;
-    });
+      // Update booking with new room number
+      const updatedBooking = {
+        ...selectedBookingData,
+        roomNumber: newRoomNumber,
+        transferHistory: [...(selectedBookingData.transferHistory || []), transferRecord]
+      };
 
-    // Save transfer record
-    const transfers = JSON.parse(localStorage.getItem('roomTransfers') || '[]');
-    transfers.push(transferRecord);
-    localStorage.setItem('roomTransfers', JSON.stringify(transfers));
+      const formData = new FormData();
+      formData.append('booking', JSON.stringify(updatedBooking));
+      
+      await GuestRegistrationService.updateRegistration(selectedBookingData.id, formData);
 
-    // Update bookings
-    localStorage.setItem('bookings', JSON.stringify(updatedBookings));
+      toast({
+        title: "Room Transfer Successful",
+        description: `Guest moved from Room ${selectedBookingData.roomNumber} to Room ${newRoomNumber}`
+      });
 
-    // Set old room to cleaning status
-    const roomStatuses = JSON.parse(localStorage.getItem('roomStatuses') || '{}');
-    roomStatuses[selectedBookingData.roomNumber] = 'cleaning';
-    localStorage.setItem('roomStatuses', JSON.stringify(roomStatuses));
-
-    toast({
-      title: "Room Transfer Successful",
-      description: `Guest moved from Room ${selectedBookingData.roomNumber} to Room ${newRoomNumber}`
-    });
-
-    // Reset form
-    setSelectedBooking('');
-    setNewRoomNumber('');
-    setTransferReason('');
-    setRemarks('');
-    
-    onClose();
-    window.dispatchEvent(new CustomEvent('refreshDashboard'));
+      // Reset form
+      setSelectedBooking('');
+      setNewRoomNumber('');
+      setTransferReason('');
+      setRemarks('');
+      
+      onClose();
+      window.dispatchEvent(new CustomEvent('refreshDashboard'));
+    } catch (error) {
+      console.error('Error during room transfer:', error);
+      toast({
+        title: "Transfer Failed",
+        description: "An error occurred during room transfer",
+      });
+    }
   };
 
   return (

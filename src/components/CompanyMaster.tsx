@@ -41,7 +41,6 @@ const CompanyMaster = () => {
       toast({
         title: 'Error',
         description: 'Failed to fetch companies',
-        variant: 'destructive',
       });
     }
   };
@@ -66,7 +65,6 @@ const CompanyMaster = () => {
       toast({
         title: 'Error',
         description: error?.response?.data?.message || 'Failed to submit company',
-        variant: 'destructive',
       });
     }
   };
@@ -96,7 +94,6 @@ const CompanyMaster = () => {
       toast({
         title: 'Error',
         description: error?.response?.data?.message || 'Failed to delete company',
-        variant: 'destructive',
       });
     }
   };

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,10 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { UserPlus, Trash2 } from 'lucide-react'
-import axios from 'axios';
 import UserService from '@/services/User';
-
-const API_BASE = 'http://localhost:8080/v1/api';
 
 interface User {
   id: string;
@@ -29,53 +27,52 @@ const UserManagement = () => {
   });
 
   useEffect(() => {
-    fetchUsers(); // Optional: implement backend fetch
+    fetchUsers();
   }, []);
 
   const fetchUsers = async () => {
-  try {
-    const backendUsers = await UserService.getAllUsers(); // API call
-    setUsers(backendUsers); // Update state with data from backend
-  } catch (error) {
-    console.error("Error fetching users from backend", error);
-  }
-};
+    try {
+      const backendUsers = await UserService.getAllUsers();
+      setUsers(backendUsers);
+    } catch (error) {
+      console.error("Error fetching users from backend", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch users',
+      });
+    }
+  };
 
-  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  try {
-    const newUser = await UserService.createUser(formData); 
-
-    setUsers(prev => [...prev, newUser]);
-
-    toast({ title: 'Success', description: 'User created successfully' });
-
-    setFormData({ username: '', password: '', role: 'user' });
-    setIsFormOpen(false);
-  } catch (error: any) {
-    toast({
-      title: 'Error',
-      description: error?.response?.data?.message || 'Failed to create user',
-      variant: 'destructive',
-    });
-  }
-};
-
+    try {
+      const newUser = await UserService.createUser(formData); 
+      setUsers(prev => [...prev, newUser]);
+      toast({ title: 'Success', description: 'User created successfully' });
+      setFormData({ username: '', password: '', role: 'user' });
+      setIsFormOpen(false);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.message || 'Failed to create user',
+      });
+    }
+  };
 
   const handleDelete = async (id: string) => {
-    try {
-     const deleteUser = await UserService.deleteUser(id);
-      setUsers(prev => prev.filter(user => user.id !== id));
+    if (!window.confirm('Are you sure you want to delete this user?')) {
+      return;
+    }
 
+    try {
+      await UserService.deleteUser(id);
+      setUsers(prev => prev.filter(user => user.id !== id));
       toast({ title: 'Success', description: 'User deleted successfully' });
     } catch (error: any) {
       toast({
         title: 'Error',
         description: error?.response?.data?.message || 'Failed to delete user',
-        variant: 'destructive',
       });
     }
   };
@@ -154,8 +151,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                   <TableCell className="capitalize">{user.role}</TableCell>
                   <TableCell>
                     <Button
-                      variant="destructive"
                       size="sm"
+                      className="bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
                       onClick={() => handleDelete(user.id)}
                     >
                       <Trash2 className="h-4 w-4" />
