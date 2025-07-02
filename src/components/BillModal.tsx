@@ -66,7 +66,7 @@ const BillModal: React.FC<BillModalProps> = ({ isOpen, onClose, billData, hotelC
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Room Charges:</span>
-                <span>₹{billData.baseFare}</span>
+                <span>₹{billData.baseFare || 0}</span>
               </div>
               {billData.extraBedCost > 0 && (
                 <div className="flex justify-between">
@@ -82,7 +82,7 @@ const BillModal: React.FC<BillModalProps> = ({ isOpen, onClose, billData, hotelC
               )}
               <div className="flex justify-between">
                 <span>Subtotal:</span>
-                <span>₹{billData.totalBeforeDiscount}</span>
+                <span>₹{billData.totalBeforeDiscount || (billData.baseFare + billData.extraBedCost + billData.mealCosts)}</span>
               </div>
               {billData.discountAmount > 0 && (
                 <div className="flex justify-between text-green-600">
@@ -92,7 +92,7 @@ const BillModal: React.FC<BillModalProps> = ({ isOpen, onClose, billData, hotelC
               )}
               <div className="flex justify-between">
                 <span>Amount after discount:</span>
-                <span>₹{billData.finalFare}</span>
+                <span>₹{billData.finalFare || (billData.totalBeforeDiscount - billData.discountAmount)}</span>
               </div>
               {billData.gstAmount > 0 && (
                 <div className="flex justify-between">
@@ -103,15 +103,15 @@ const BillModal: React.FC<BillModalProps> = ({ isOpen, onClose, billData, hotelC
               <hr />
               <div className="flex justify-between font-bold">
                 <span>Total Amount:</span>
-                <span>₹{billData.grandTotal}</span>
+                <span>₹{billData.grandTotal || (billData.finalFare + billData.gstAmount)}</span>
               </div>
               <div className="flex justify-between text-green-600">
                 <span>Advance Paid:</span>
-                <span>₹{billData.advancePayment}</span>
+                <span>₹{billData.advancePayment || 0}</span>
               </div>
               <div className="flex justify-between font-bold text-red-600">
                 <span>Amount Due:</span>
-                <span>₹{billData.remainingPayment}</span>
+                <span>₹{billData.remainingPayment || (billData.grandTotal - billData.advancePayment)}</span>
               </div>
             </div>
           </div>

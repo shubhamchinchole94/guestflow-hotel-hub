@@ -71,6 +71,9 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
     },
     wakeUpCall: '',
     wakeUpCallTime: '',
+    roomNumber: selectedRoom || '',
+    totalGuests: 1,
+    status: 'active',
   });
 
   const [dragActive, setDragActive] = useState(false);
@@ -106,9 +109,20 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
         checkOutTime,
         farePerNight: roomInfo?.price || 1000,
         extraBedPrice: hotelConfig.extraBedPrice || 0,
+        roomNumber: selectedRoom,
+        totalGuests: 1 + prev.familyMembers.length,
+        status: 'active',
       }));
     }
   }, [isOpen, selectedDate, selectedRoom, formData.stayDuration, hotelConfig]);
+
+  useEffect(() => {
+    const totalGuests = 1 + formData.familyMembers.length;
+    setFormData((prev) => ({
+      ...prev,
+      totalGuests,
+    }));
+  }, [formData.familyMembers.length]);
 
   useEffect(() => {
     const extraBedCost = formData.extraBed ? formData.extraBedPrice : 0;
@@ -291,6 +305,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
       roomNumber: selectedRoom,
       ...formData,
       totalGuests: 1 + formData.familyMembers.length,
+      status: 'active',
       createdAt: new Date().toISOString(),
       companyDetails: selectedCompany,
       billing: {
@@ -349,7 +364,6 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
       toast({
         title: 'Booking Failed',
         description: 'An error occurred while confirming the booking',
-        variant: 'destructive',
       });
     }
   };
@@ -386,6 +400,9 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
       },
       wakeUpCall: '',
       wakeUpCallTime: '',
+      roomNumber: '',
+      totalGuests: 1,
+      status: 'active',
     });
     setImagePreview({});
   };
@@ -446,8 +463,11 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
       const booking = response.data;
 
       if (booking) {
+        // Update status to inactive
+        const updatedBooking = { ...booking, status: 'inactive' };
+        await GuestRegistrationService.updateRegistration(bookingId, new FormData());
+        
         generateBill(booking);
-        await GuestRegistrationService.deleteRegistration(bookingId);
 
         toast({
           title: 'Check-out Successful',
@@ -462,7 +482,6 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
       toast({
         title: 'Check-out Failed',
         description: 'An error occurred during check-out',
-        variant: 'destructive',
       });
     }
   };
@@ -558,14 +577,18 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, companyId: e.target.value }))
                     }
-                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 z-50"
                   >
                     <option value="">Walk-in Guest</option>
-                    {companies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.companyName} - {company.roomPriceDiscount}% discount
-                      </option>
-                    ))}
+                    {companies && companies.length > 0 ? (
+                      companies.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {company.companyName} - {company.roomPriceDiscount}% discount
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>No companies available</option>
+                    )}
                   </select>
                 </div>
               </CardContent>

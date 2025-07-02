@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { useGuestStore } from '@/store/guestStore';
 import { format } from 'date-fns';
 import { Search, Eye, IdCard, FileText, DollarSign } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import GuestRegistrationService from '@/services/GuestRegistrationService';
 
 const GuestList = () => {
   const [guests, setGuests] = useState<any[]>([]);
@@ -33,9 +33,14 @@ const GuestList = () => {
     filterGuests();
   }, [guests, searchTerm]);
 
-  const loadGuests = () => {
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    setGuests(bookings);
+  const loadGuests = async () => {
+    try {
+      const response = await GuestRegistrationService.getAllRegistrations();
+      setGuests(response.data || []);
+    } catch (error) {
+      console.error('Error loading guests:', error);
+      setGuests([]);
+    }
   };
 
   const filterGuests = () => {
@@ -56,6 +61,10 @@ const GuestList = () => {
   };
 
   const getGuestStatus = (guest: any) => {
+    if (guest.status) {
+      return guest.status === 'active' ? 'active' : 'checked-out';
+    }
+    
     const checkIn = new Date(guest.checkInDate);
     const checkOut = new Date(guest.checkOutDate);
     const today = new Date();
@@ -130,28 +139,32 @@ const GuestList = () => {
     setShowBill(true);
   };
 
-  const handleCheckOut = (guestData: any) => {
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    
-    // Generate bill first
-    generateBill(guestData);
-    
-    // Set room to cleaning status
-    const roomStatuses = JSON.parse(localStorage.getItem('roomStatuses') || '{}');
-    roomStatuses[guestData.roomNumber] = 'cleaning';
-    localStorage.setItem('roomStatuses', JSON.stringify(roomStatuses));
-    
-    // Remove booking
-    const updatedBookings = bookings.filter((b: any) => b.id !== guestData.id);
-    localStorage.setItem('bookings', JSON.stringify(updatedBookings));
-    
-    toast({
-      title: "Check-out Successful",
-      description: "Guest has been checked out. Room is now in cleaning mode."
-    });
-    
-    loadGuests();
-    window.dispatchEvent(new CustomEvent('refreshDashboard'));
+  const handleCheckOut = async (guestData: any) => {
+    try {
+      // Update guest status to inactive
+      const updatedGuest = { ...guestData, status: 'inactive' };
+      const formData = new FormData();
+      formData.append('booking', JSON.stringify(updatedGuest));
+      
+      await GuestRegistrationService.updateRegistration(guestData.id, formData);
+      
+      // Generate bill first
+      generateBill(guestData);
+
+      toast({
+        title: "Check-out Successful",
+        description: "Guest has been checked out. Room is now in cleaning mode."
+      });
+      
+      loadGuests();
+      window.dispatchEvent(new CustomEvent('refreshDashboard'));
+    } catch (error) {
+      console.error('Error during checkout:', error);
+      toast({
+        title: "Check-out Failed",
+        description: "An error occurred during check-out"
+      });
+    }
   };
 
   const handleRowClick = (guest: any) => {
@@ -237,8 +250,8 @@ const GuestList = () => {
                       <td className="py-3 px-2">
                         {getStatusBadge(status)}
                       </td>
-                      <td className="py-3 px-2">{guest.totalGuests}</td>
-                      <td className="py-3 px-2 text-red-600 font-medium">₹{guest.remainingPayment}</td>
+                      <td className="py-3 px-2">{guest.totalGuests || 1}</td>
+                      <td className="py-3 px-2 text-red-600 font-medium">₹{guest.remainingPayment || 0}</td>
                       <td className="py-3 px-2">
                         <div className="flex space-x-2">
                           {status === 'checked-out' ? (
@@ -267,12 +280,13 @@ const GuestList = () => {
                                 View
                               </Button>
                               <Button
-                                variant="destructive"
+                                variant="outline"
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleCheckOut(guest);
                                 }}
+                                className="text-red-600 hover:text-red-700"
                               >
                                 <DollarSign className="h-4 w-4 mr-1" />
                                 Check Out
