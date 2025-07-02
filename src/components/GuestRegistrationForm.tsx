@@ -9,6 +9,7 @@ import { useGuestStore } from '@/store/guestStore';
 import { format } from 'date-fns';
 import { Upload, Eye } from 'lucide-react';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
+import CompanyService from '@/services/company';
 import PrimaryGuestDetails from './PrimaryGuestDetails';
 import FamilyMembers from './FamilyMembers';
 import AdditionalServices from './AdditionalServices';
@@ -80,6 +81,29 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
   const [imagePreview, setImagePreview] = useState<{ [key: string]: string }>({});
   const [showBill, setShowBill] = useState(false);
   const [billData, setBillData] = useState<any>(null);
+  const [fetchedCompanies, setFetchedCompanies] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchCompanies();
+      fetchHotelConfig();
+    }
+  }, [isOpen]);
+
+  const fetchCompanies = async () => {
+    try {
+      const response = await CompanyService.getAllCompanies();
+      setFetchedCompanies(response.data || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+      setFetchedCompanies([]);
+    }
+  };
+
+  const fetchHotelConfig = async () => {
+    // Implement hotel config service call when available
+    // For now, use the passed hotelConfig prop
+  };
 
   useEffect(() => {
     if (isOpen && selectedDate && selectedRoom) {
@@ -133,7 +157,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
     let appliedDiscount = 0;
 
     if (formData.companyId) {
-      const selectedCompany = companies.find((c) => c.id === formData.companyId);
+      const selectedCompany = fetchedCompanies.find((c) => c.id === formData.companyId);
       if (selectedCompany) {
         appliedDiscount = (totalFare * selectedCompany.roomPriceDiscount) / 100;
         finalFare = totalFare - appliedDiscount;
@@ -152,7 +176,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
     formData.extraBedPrice,
     formData.mealPlan,
     formData.companyId,
-    companies,
+    fetchedCompanies,
     hotelConfig,
   ]);
 
@@ -285,7 +309,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const selectedCompany = companies.find((c) => c.id === formData.companyId);
+    const selectedCompany = fetchedCompanies.find((c) => c.id === formData.companyId);
     const extraBedCost = formData.extraBed ? formData.extraBedPrice : 0;
     const mealCosts = calculateMealCosts();
     const totalFare = formData.farePerNight + extraBedCost + mealCosts;
@@ -408,7 +432,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
   };
 
   const generateBill = (bookingData: any) => {
-    const selectedCompany = companies.find((c) => c.id === bookingData.companyId);
+    const selectedCompany = fetchedCompanies.find((c) => c.id === bookingData.companyId);
     const extraBedCost = bookingData.extraBed ? bookingData.extraBedPrice : 0;
     const mealCosts =
       (bookingData.mealPlan?.breakfast ? hotelConfig.mealPrices?.breakfast || 0 : 0) +
@@ -465,7 +489,10 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
       if (booking) {
         // Update status to inactive
         const updatedBooking = { ...booking, status: 'inactive' };
-        await GuestRegistrationService.updateRegistration(bookingId, new FormData());
+        const formData = new FormData();
+        formData.append('booking', JSON.stringify(updatedBooking));
+        
+        await GuestRegistrationService.updateRegistration(bookingId, formData);
         
         generateBill(booking);
 
@@ -580,8 +607,8 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
                     className="w-full rounded-md border border-input bg-background px-3 py-2 z-50"
                   >
                     <option value="">Walk-in Guest</option>
-                    {companies && companies.length > 0 ? (
-                      companies.map((company) => (
+                    {fetchedCompanies && fetchedCompanies.length > 0 ? (
+                      fetchedCompanies.map((company) => (
                         <option key={company.id} value={company.id}>
                           {company.companyName} - {company.roomPriceDiscount}% discount
                         </option>
@@ -626,7 +653,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
             <BillingSummary
               formData={formData}
               setFormData={setFormData}
-              companies={companies}
+              companies={fetchedCompanies}
               hotelConfig={hotelConfig}
               calculateMealCosts={calculateMealCosts}
             />

@@ -84,6 +84,10 @@ const CompanyMaster = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this company?')) {
+      return;
+    }
+
     try {
       await CompanyService.deleteCompany(id);
       setCompanies(prev => prev.filter(company => company.id !== id));
@@ -228,7 +232,11 @@ const CompanyMaster = () => {
                         <Button size="sm" variant="outline" onClick={() => handleEdit(company)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleDelete(company.id)}>
+                        <Button 
+                          size="sm" 
+                          className="bg-red-100 text-red-700 hover:bg-red-200 border border-red-300" 
+                          onClick={() => handleDelete(company.id)}
+                        >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>

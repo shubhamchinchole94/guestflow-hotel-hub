@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { Search, Eye, IdCard, FileText, DollarSign } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
+import CompanyService from '@/services/company';
 
 const GuestList = () => {
   const [guests, setGuests] = useState<any[]>([]);
@@ -17,13 +18,18 @@ const GuestList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showBill, setShowBill] = useState(false);
   const [billData, setBillData] = useState<any>(null);
+  const [companies, setCompanies] = useState<any[]>([]);
   const { openGuestDetails } = useGuestStore();
 
   useEffect(() => {
     loadGuests();
+    loadCompanies();
     
     // Listen for dashboard refresh events
-    const handleRefresh = () => loadGuests();
+    const handleRefresh = () => {
+      loadGuests();
+      loadCompanies();
+    };
     window.addEventListener('refreshDashboard', handleRefresh);
     
     return () => window.removeEventListener('refreshDashboard', handleRefresh);
@@ -40,6 +46,16 @@ const GuestList = () => {
     } catch (error) {
       console.error('Error loading guests:', error);
       setGuests([]);
+    }
+  };
+
+  const loadCompanies = async () => {
+    try {
+      const response = await CompanyService.getAllCompanies();
+      setCompanies(response.data || []);
+    } catch (error) {
+      console.error('Error loading companies:', error);
+      setCompanies([]);
     }
   };
 
@@ -88,14 +104,11 @@ const GuestList = () => {
   };
 
   const generateBill = (guestData: any) => {
-    const companies = JSON.parse(localStorage.getItem('companies') || '[]');
-    const hotelConfig = JSON.parse(localStorage.getItem('hotelConfig') || '{}');
-    
     const selectedCompany = companies.find((c: any) => c.id === guestData.companyId);
     const extraBedCost = guestData.extraBed ? guestData.extraBedPrice : 0;
-    const mealCosts = (guestData.mealPlan?.breakfast ? (hotelConfig.mealPrices?.breakfast || 0) : 0) +
-                      (guestData.mealPlan?.lunch ? (hotelConfig.mealPrices?.lunch || 0) : 0) +
-                      (guestData.mealPlan?.dinner ? (hotelConfig.mealPrices?.dinner || 0) : 0);
+    const mealCosts = (guestData.mealPlan?.breakfast ? 200 : 0) +
+                      (guestData.mealPlan?.lunch ? 300 : 0) +
+                      (guestData.mealPlan?.dinner ? 400 : 0);
     
     const totalFare = guestData.farePerNight + extraBedCost + mealCosts;
     
@@ -140,6 +153,10 @@ const GuestList = () => {
   };
 
   const handleCheckOut = async (guestData: any) => {
+    if (!window.confirm('Are you sure you want to check out this guest?')) {
+      return;
+    }
+
     try {
       // Update guest status to inactive
       const updatedGuest = { ...guestData, status: 'inactive' };
@@ -279,14 +296,13 @@ const GuestList = () => {
                                 <Eye className="h-4 w-4 mr-1" />
                                 View
                               </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
+                              <Button 
+                                size="sm" 
+                                className="bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleCheckOut(guest);
                                 }}
-                                className="text-red-600 hover:text-red-700"
                               >
                                 <DollarSign className="h-4 w-4 mr-1" />
                                 Check Out
