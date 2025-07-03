@@ -104,54 +104,60 @@ const GuestList = () => {
     }
   };
 
-  const generateBill = (guestData: any) => {
-    const selectedCompany = companies.find((c: any) => c.id === guestData.companyId);
-    const extraBedCost = guestData.extraBed ? guestData.extraBedPrice : 0;
-    const mealCosts = (guestData.mealPlan?.breakfast ? 200 : 0) +
-                      (guestData.mealPlan?.lunch ? 300 : 0) +
-                      (guestData.mealPlan?.dinner ? 400 : 0);
-    
-    const totalFare = guestData.farePerNight + extraBedCost + mealCosts;
-    
-    let finalFare = totalFare;
-    let appliedDiscount = 0;
-    let gstRate = 0;
-    let gstAmount = 0;
-    
-    if (selectedCompany) {
-      appliedDiscount = (totalFare * selectedCompany.roomPriceDiscount) / 100;
-      finalFare = totalFare - appliedDiscount;
-      gstRate = selectedCompany.gstPercentage;
-      gstAmount = (finalFare * gstRate) / 100;
-    }
+ const generateBill = (guestData: any) => {
+  const selectedCompany = companies.find((c: any) => c.id === guestData.companyId);
 
-    const bill = {
-      bookingId: guestData.id,
-      guestName: `${guestData.primaryGuest.firstName} ${guestData.primaryGuest.lastName}`,
-      roomNumber: guestData.roomNumber,
-      checkInDate: guestData.checkInDate,
-      checkInTime: guestData.checkInTime,
-      checkOutDate: guestData.checkOutDate,
-      checkOutTime: guestData.checkOutTime,
-      baseFare: guestData.farePerNight,
-      extraBedCost,
-      mealCosts,
-      totalBeforeDiscount: totalFare,
-      discountAmount: appliedDiscount,
-      discountPercentage: selectedCompany?.roomPriceDiscount || 0,
-      finalFare,
-      gstRate,
-      gstAmount,
-      grandTotal: finalFare + gstAmount,
-      advancePayment: guestData.advancePayment,
-      remainingPayment: (finalFare + gstAmount) - guestData.advancePayment,
-      companyName: selectedCompany?.companyName || 'Walk-in Guest',
-      generatedAt: new Date().toISOString()
-    };
+  const farePerNight = Number(guestData.farePerNight);
+  const extraBedCost = guestData.extraBed ? Number(guestData.extraBedPrice) : 0;
+  const mealCosts = 
+    (guestData.mealPlan?.breakfast ? 200 : 0) +
+    (guestData.mealPlan?.lunch ? 300 : 0) +
+    (guestData.mealPlan?.dinner ? 400 : 0);
 
-    setBillData(bill);
-    setShowBill(true);
+  const totalFare = farePerNight + extraBedCost + mealCosts;
+  let finalFare = totalFare;
+  let appliedDiscount = 0;
+  let gstRate = 0;
+  let gstAmount = 0;
+
+  if (selectedCompany) {
+    appliedDiscount = (totalFare * selectedCompany.roomPriceDiscount) / 100;
+    finalFare = totalFare - appliedDiscount;
+    gstRate = selectedCompany.gstPercentage;
+    gstAmount = (finalFare * gstRate) / 100;
+  }
+
+  const advancePayment = Number(guestData.advancePayment || 0);
+
+  const bill = {
+    bookingId: guestData.id,
+    guestName: `${guestData.primaryGuest.firstName} ${guestData.primaryGuest.lastName}`,
+    roomNumber: guestData.roomNumber,
+    checkInDate: guestData.checkInDate,
+    checkInTime: guestData.checkInTime,
+    checkOutDate: guestData.checkOutDate,
+    checkOutTime: guestData.checkOutTime,
+    baseFare: farePerNight,
+    extraBedCost,
+    mealCosts,
+    totalBeforeDiscount: totalFare,
+    discountAmount: appliedDiscount,
+    discountPercentage: selectedCompany?.roomPriceDiscount || 0,
+    finalFare,
+    gstRate,
+    gstAmount,
+    grandTotal: finalFare + gstAmount,
+    advancePayment,
+    remainingPayment: (finalFare + gstAmount) - advancePayment,
+    companyName: selectedCompany?.companyName || 'Walk-in Guest',
+    generatedAt: new Date().toISOString()
   };
+
+  console.log("current bill:", bill);
+  setBillData(bill);
+  setShowBill(true);
+};
+
 
   const handleCheckOut = async (guestData: any) => {
     if (!window.confirm('Are you sure you want to check out this guest?')) {

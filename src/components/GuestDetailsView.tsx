@@ -14,6 +14,19 @@ interface GuestDetailsViewProps {
   onCheckOut: (bookingId: string) => void;
 }
 
+const updateGuestStatus = async (id: string, status: string) => {
+  try {
+    const response = await GuestRegistrationService.updateStatusOfGuest(id, status);
+
+    console.log("Guest status updated:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to update guest status:", error);
+    throw error;
+  }
+};
+
+
 const GuestDetailsView: React.FC<GuestDetailsViewProps> = ({
   isOpen,
   onClose,
@@ -147,9 +160,19 @@ const GuestDetailsView: React.FC<GuestDetailsViewProps> = ({
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
-            <Button variant="destructive" onClick={() => onCheckOut(selectedGuest.id)}>
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
+              onClick={async () => {
+                try {
+                  await updateGuestStatus(selectedGuest.id, "checked_out");
+                } catch (err) {
+                  // Optional: show toast or error feedback
+                }
+              }}
+            >
               Check Out & Generate Bill
-            </Button>
+            </button>
+
           </div>
         </div>
       </DialogContent>

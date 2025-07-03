@@ -348,7 +348,11 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('booking', JSON.stringify(booking));
+      formDataToSend.append(
+  'form',
+  new Blob([JSON.stringify(booking)], { type: 'application/json' })
+);
+
 
       if (formData.primaryGuest.identityFile) {
         formDataToSend.append('primaryIdentityFile', formData.primaryGuest.identityFile);

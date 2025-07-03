@@ -18,8 +18,9 @@ const BillGeneration = ({ isOpen, onClose }: BillGenerationProps) => {
   useEffect(() => {
     if (isOpen) {
       const currentBill = localStorage.getItem('currentBill');
+      console.log("current bill:", currentBill);
       const config = localStorage.getItem('hotelConfig');
-      
+      console.log("hotel config:", config);
       if (currentBill) {
         setBillData(JSON.parse(currentBill));
       }

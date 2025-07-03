@@ -48,6 +48,16 @@ class GuestRegistrationService {
       headers: HEADERS,
     });
   }
+
+  updateStatusOfGuest(id: string, status: string) {
+  return axios.put(
+    `${GUEST_REGISTRATION_BASE_URL}/update-status/${id}/${status}`,
+    { status }, // Payload body
+    { headers: HEADERS } // Axios config
+  );
+}
+
+
 }
 
 export default new GuestRegistrationService();

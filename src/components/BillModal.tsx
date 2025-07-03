@@ -13,7 +13,7 @@ interface BillModalProps {
 
 const BillModal: React.FC<BillModalProps> = ({ isOpen, onClose, billData, hotelConfig }) => {
   if (!billData) return null;
-
+  console.log("billData:", billData);
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
