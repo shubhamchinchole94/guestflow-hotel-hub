@@ -33,7 +33,6 @@ import BulkBooking from '@/components/BulkBooking';
 import BillGeneration from '@/components/BillGeneration';
 import RoomTransfer from '@/components/RoomTransfer';
 import HotelService from '@/services/hotel';
-import DashboardService from '@/services/dashboard';
 
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -43,13 +42,13 @@ const Dashboard = () => {
   const [hotelConfig, setHotelConfig] = useState<any>({});
   const [refreshKey, setRefreshKey] = useState(0);
   const [sessionTime, setSessionTime] = useState('');
-  
+
   // New state for additional dialogs
   const [isBulkBookingOpen, setIsBulkBookingOpen] = useState(false);
   const [isBillGenerationOpen, setIsBillGenerationOpen] = useState(false);
   const [isRoomTransferOpen, setIsRoomTransferOpen] = useState(false);
   const [targetRoomForTransfer, setTargetRoomForTransfer] = useState<string>('');
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -101,7 +100,7 @@ const Dashboard = () => {
       if (currentLoginTime) {
         const currentTimestamp = new Date().getTime();
         const loginTimestamp = new Date(currentLoginTime).getTime();
-        
+
         if (currentTimestamp - loginTimestamp > sessionTimeout) {
           handleLogout();
           toast({
@@ -255,9 +254,9 @@ const Dashboard = () => {
                 <SidebarTrigger className="md:hidden" />
                 <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
                   {hotelConfig.hotelLogo ? (
-                    <img 
-                      src={hotelConfig.hotelLogo} 
-                      alt="Hotel logo" 
+                    <img
+                      src={hotelConfig.hotelLogo}
+                      alt="Hotel logo"
                       className="h-6 w-6 object-contain mr-2"
                     />
                   ) : (
@@ -315,8 +314,8 @@ const Dashboard = () => {
                           onSelect={(date) => date && setSelectedDate(date)}
                           className="rounded-md border w-full"
                         />
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="w-full mt-4"
                           onClick={() => setSelectedDate(new Date())}
                         >
@@ -326,8 +325,8 @@ const Dashboard = () => {
                     </Card>
 
                     <div className="lg:col-span-2">
-                      <RoomGrid 
-                        selectedDate={selectedDate} 
+                      <RoomGrid
+                        selectedDate={selectedDate}
                         key={refreshKey}
                         onBulkBookingOpen={handleBulkBookingOpen}
                         onRoomTransferOpen={handleRoomTransferOpen}
@@ -364,7 +363,7 @@ const Dashboard = () => {
 
       {/* All Dialog Components */}
       <GuestRegistration onRefresh={refreshDashboard} />
-      <BulkBooking 
+      <BulkBooking
         isOpen={isBulkBookingOpen}
         onClose={() => setIsBulkBookingOpen(false)}
         selectedDate={selectedDate}

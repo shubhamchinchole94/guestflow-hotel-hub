@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Hotel, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
 import HotelService from '@/services/hotel';
-import DashboardService from '@/services/dashboard';
+import DashboardService from '@/services/DashboardService';
+import GuestRegistrationService from '@/services/GuestRegistrationService';
 
 const StatsCards = () => {
   const [stats, setStats] = useState({
@@ -15,11 +16,11 @@ const StatsCards = () => {
 
   useEffect(() => {
     calculateStats();
-    
+
     // Listen for dashboard refresh events
     const handleRefresh = () => calculateStats();
     window.addEventListener('refreshDashboard', handleRefresh);
-    
+
     return () => window.removeEventListener('refreshDashboard', handleRefresh);
   }, []);
 
@@ -30,9 +31,9 @@ const StatsCards = () => {
       const hotelConfig = hotelConfigResponse.data || {};
 
       // Get bookings from service
-      const bookingsResponse = await DashboardService.getBookings();
+      const bookingsResponse = await GuestRegistrationService.getAllRegistrations();
       const bookings = bookingsResponse.data || [];
-      
+
       if (hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
         const totalRooms = hotelConfig.totalFloors * hotelConfig.roomsPerFloor;
         const currentBookings = bookings.filter((booking: any) => {
@@ -41,7 +42,7 @@ const StatsCards = () => {
           const today = new Date();
           return today >= checkIn && today <= checkOut && booking.status === 'active';
         });
-        
+
         const occupiedRooms = currentBookings.length;
         const availableRooms = totalRooms - occupiedRooms;
         const occupancyRate = Math.round((occupiedRooms / totalRooms) * 100);

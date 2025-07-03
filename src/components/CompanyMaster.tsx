@@ -12,7 +12,7 @@ interface Company {
   companyName: string;
   agentName: string;
   agentNumber: string;
-  mailId: string;
+  emailId: string;
   gstPercentage: number;
   roomPriceDiscount: number;
 }
@@ -24,7 +24,7 @@ const CompanyMaster = () => {
     companyName: '',
     agentName: '',
     agentNumber: '',
-    mailId: '',
+    emailId: '',
     gstPercentage: 18,
     roomPriceDiscount: 0
   });
@@ -74,7 +74,7 @@ const CompanyMaster = () => {
       companyName: company.companyName,
       agentName: company.agentName,
       agentNumber: company.agentNumber,
-      mailId: company.mailId,
+      emailId: company.emailId,
       gstPercentage: company.gstPercentage,
       roomPriceDiscount: company.roomPriceDiscount
     });
@@ -103,7 +103,7 @@ const CompanyMaster = () => {
       companyName: '',
       agentName: '',
       agentNumber: '',
-      mailId: '',
+      emailId: '',
       gstPercentage: 18,
       roomPriceDiscount: 0
     });
@@ -153,8 +153,8 @@ const CompanyMaster = () => {
                 <Input
                   id="mailId"
                   type="email"
-                  value={formData.mailId}
-                  onChange={e => setFormData({ ...formData, mailId: e.target.value })}
+                  value={formData.emailId}
+                  onChange={e => setFormData({ ...formData, emailId: e.target.value })}
                   required
                 />
               </div>
@@ -221,7 +221,7 @@ const CompanyMaster = () => {
                     <td className="border border-gray-300 p-2">{company.companyName}</td>
                     <td className="border border-gray-300 p-2">{company.agentName}</td>
                     <td className="border border-gray-300 p-2">{company.agentNumber}</td>
-                    <td className="border border-gray-300 p-2">{company.mailId}</td>
+                    <td className="border border-gray-300 p-2">{company.emailId}</td>
                     <td className="border border-gray-300 p-2">{company.gstPercentage}%</td>
                     <td className="border border-gray-300 p-2">{company.roomPriceDiscount}%</td>
                     <td className="border border-gray-300 p-2">

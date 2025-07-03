@@ -6,7 +6,8 @@ import { useGuestStore } from '@/store/guestStore';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Users, ArrowRight, Clock } from 'lucide-react';
 import HotelService from '@/services/hotel';
-import DashboardService from '@/services/dashboard';
+import DashboardService from '@/services/DashboardService';
+import GuestRegistrationService from '@/services/GuestRegistrationService';
 
 interface RoomGridProps {
   selectedDate: Date;
@@ -34,69 +35,39 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
 
   useEffect(() => {
     generateRooms();
-    checkWakeUpCalls();
-    
+   
+
     const handleRefresh = () => {
       generateRooms();
-      checkWakeUpCalls();
+     
     };
     window.addEventListener('refreshDashboard', handleRefresh);
-    
+
     return () => window.removeEventListener('refreshDashboard', handleRefresh);
   }, [selectedDate]);
 
-  const checkWakeUpCalls = async () => {
-    try {
-      const response = await DashboardService.getWakeUpCalls();
-      const wakeUpCalls = response.data || [];
-      const todayString = format(selectedDate, 'yyyy-MM-dd');
-      const currentTime = new Date();
-      
-      const todaysWakeUpCalls = wakeUpCalls.filter((call: any) => call.date === todayString);
-      
-      todaysWakeUpCalls.forEach((call: any) => {
-        const [hours, minutes] = call.time.split(':');
-        const wakeUpTime = new Date();
-        wakeUpTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        
-        const timeDiff = wakeUpTime.getTime() - currentTime.getTime();
-        const minutesUntilWakeUp = Math.floor(timeDiff / (1000 * 60));
-        
-        if (minutesUntilWakeUp >= 0 && minutesUntilWakeUp <= 30) {
-          setWakeUpAlert(`Wake-up call for Room ${call.roomNumber} (${call.guestName}) at ${call.time}`);
-          setTimeout(() => setWakeUpAlert(''), 10000); // Hide after 10 seconds
-        }
-      });
-    } catch (error) {
-      console.error('Error checking wake up calls:', error);
-    }
-  };
 
   const generateRooms = async () => {
     try {
-      const [hotelConfigResponse, bookingsResponse, roomStatusesResponse, wakeUpCallsResponse] = await Promise.all([
+      const [hotelConfigResponse, bookingsResponse, roomStatusesResponse] = await Promise.all([
         HotelService.getHotelConfig(),
-        DashboardService.getBookings(),
+        GuestRegistrationService.getAllRegistrations(),
         DashboardService.getRoomStatuses(),
-        DashboardService.getWakeUpCalls()
       ]);
 
       const hotelConfig = hotelConfigResponse.data || {};
       const bookings = bookingsResponse.data || [];
       const roomStatuses = roomStatusesResponse.data || {};
-      const wakeUpCalls = wakeUpCallsResponse.data || [];
       const todayString = format(selectedDate, 'yyyy-MM-dd');
-      
+
       if (!hotelConfig.totalFloors || !hotelConfig.roomsPerFloor) {
         const defaultRooms: Room[] = [];
         for (let floor = 1; floor <= 2; floor++) {
           for (let room = 1; room <= 6; room++) {
             const roomNumber = `${floor}0${room}`;
             const status = roomStatuses[roomNumber] || 'available';
-            const hasWakeUpCall = wakeUpCalls.some((call: any) => 
-              call.roomNumber === roomNumber && call.date === todayString
-            );
             
+
             defaultRooms.push({
               roomNumber,
               floor,
@@ -105,7 +76,6 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
               isOccupied: false,
               guest: null,
               status: status as any,
-              hasWakeUpCall
             });
           }
         }
@@ -119,27 +89,23 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
       for (let floor = 1; floor <= totalFloors; floor++) {
         for (let room = 1; room <= roomsPerFloor; room++) {
           const roomNumber = `${floor}0${room}`;
-          
+
           const roomBooking = bookings.find((booking: any) => {
             const checkIn = new Date(booking.checkInDate);
             const checkOut = new Date(booking.checkOutDate);
-            return booking.roomNumber === roomNumber && 
-                   selectedDate >= checkIn && 
-                   selectedDate <= checkOut &&
-                   booking.status === 'active';
+            return booking.roomNumber === roomNumber &&
+              selectedDate >= checkIn &&
+              selectedDate <= checkOut &&
+              booking.status === 'active';
           });
 
           const typeIndex = (room - 1) % roomTypes.length;
           const roomType = roomTypes[typeIndex] || { name: 'Regular', price: 1000 };
-          
+
           let status = roomStatuses[roomNumber] || 'available';
           if (roomBooking) {
             status = 'occupied';
           }
-
-          const hasWakeUpCall = wakeUpCalls.some((call: any) => 
-            call.roomNumber === roomNumber && call.date === todayString
-          );
 
           generatedRooms.push({
             roomNumber,
@@ -149,7 +115,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
             isOccupied: !!roomBooking,
             guest: roomBooking || null,
             status: status as any,
-            hasWakeUpCall
+           
           });
         }
       }
@@ -182,7 +148,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
     if (room.status === 'out-of-order') {
       return; // Don't allow any action on out-of-order rooms
     }
-    
+
     if (room.isOccupied && room.guest) {
       openGuestDetails(room.guest);
     } else if (room.status === 'available') {
@@ -193,11 +159,11 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
   const handleRoomStatusChange = async (roomNumber: string, newStatus: string) => {
     try {
       await DashboardService.updateRoomStatus(roomNumber, newStatus);
-      
+
       if (onRoomStatusChange) {
         onRoomStatusChange(roomNumber, newStatus);
       }
-      
+
       generateRooms();
       window.dispatchEvent(new CustomEvent('refreshDashboard'));
     } catch (error) {
@@ -223,11 +189,11 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
       default:
         baseColor = 'bg-gray-100 border-gray-300 text-gray-800';
     }
-    
+
     if (hasWakeUpCall) {
       return baseColor + ' ring-2 ring-orange-400 ring-offset-2';
     }
-    
+
     return baseColor;
   };
 
@@ -290,13 +256,12 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                   {floorRooms.map((room) => (
                     <div
                       key={room.roomNumber}
-                      className={`p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                        room.status === 'out-of-order' 
-                          ? 'opacity-50 cursor-not-allowed' 
+                      className={`p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${room.status === 'out-of-order'
+                          ? 'opacity-50 cursor-not-allowed'
                           : hoveredRoom === room.roomNumber
-                          ? getRoomStatusColor(room.status, room.hasWakeUpCall)
-                          : 'bg-card border-border hover:border-primary'
-                      } ${room.hasWakeUpCall ? 'ring-2 ring-orange-400 ring-offset-2' : ''}`}
+                            ? getRoomStatusColor(room.status, room.hasWakeUpCall)
+                            : 'bg-card border-border hover:border-primary'
+                        } ${room.hasWakeUpCall ? 'ring-2 ring-orange-400 ring-offset-2' : ''}`}
                       onMouseEnter={() => setHoveredRoom(room.roomNumber)}
                       onMouseLeave={() => setHoveredRoom(null)}
                       onClick={() => handleRoomClick(room)}
@@ -309,13 +274,13 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                         <div className="text-xs md:text-sm text-muted-foreground mb-2">
                           {room.type} - ₹{room.price}/night
                         </div>
-                        
+
                         <div className="flex flex-col items-center space-y-1">
                           <Badge variant="outline" className={`${getRoomStatusColor(room.status, room.hasWakeUpCall)}`}>
                             {room.status === 'out-of-order' && <AlertTriangle className="h-3 w-3 mr-1" />}
                             {getRoomStatusText(room.status)}
                           </Badge>
-                          
+
                           {room.hasWakeUpCall && (
                             <Badge variant="outline" className="bg-orange-100 border-orange-300 text-orange-800">
                               <Clock className="h-3 w-3 mr-1" />
@@ -323,7 +288,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                             </Badge>
                           )}
                         </div>
-                        
+
                         {room.isOccupied && room.guest ? (
                           <div className="space-y-1 mt-2">
                             <div className="text-xs text-blue-600 font-medium">

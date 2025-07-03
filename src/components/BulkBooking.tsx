@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import CompanyService from '@/services/company';
 import HotelService from '@/services/hotel';
-import DashboardService from '@/services/dashboard';
+import DashboardService from '@/services/DashboardService';
 
 interface BulkBookingProps {
   isOpen: boolean;
@@ -25,7 +25,7 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
   const [hotelConfig, setHotelConfig] = useState<any>({});
-  
+
   const [formData, setFormData] = useState({
     primaryGuest: {
       firstName: '',
@@ -76,7 +76,7 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
       const bookings = bookingsResponse.data || [];
       const roomStatuses = roomStatusesResponse.data || {};
       const hotelConfig = hotelConfigResponse.data || {};
-      
+
       const allRooms: string[] = [];
       if (hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
         for (let floor = 1; floor <= hotelConfig.totalFloors; floor++) {
@@ -86,19 +86,19 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
           }
         }
       }
-      
+
       const available = allRooms.filter(roomNumber => {
         const isOccupied = bookings.some((booking: any) => {
           const checkIn = new Date(booking.checkInDate);
           const checkOut = new Date(booking.checkOutDate);
-          return booking.roomNumber === roomNumber && 
-                 selectedDate >= checkIn && selectedDate <= checkOut &&
-                 booking.status === 'active';
+          return booking.roomNumber === roomNumber &&
+            selectedDate >= checkIn && selectedDate <= checkOut &&
+            booking.status === 'active';
         });
         const status = roomStatuses[roomNumber];
         return !isOccupied && status !== 'out-of-order' && status !== 'cleaning';
       });
-      
+
       setAvailableRooms(available);
     } catch (error) {
       console.error('Error loading available rooms:', error);
@@ -150,7 +150,7 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
       checkOutDate = format(checkOutDateTime, 'yyyy-MM-dd');
       checkOutTime = checkInTime;
     }
-    
+
     setFormData(prev => ({
       ...prev,
       checkInDate,
@@ -161,8 +161,8 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
   };
 
   const toggleRoomSelection = (roomNumber: string) => {
-    setSelectedRooms(prev => 
-      prev.includes(roomNumber) 
+    setSelectedRooms(prev =>
+      prev.includes(roomNumber)
         ? prev.filter(r => r !== roomNumber)
         : [...prev, roomNumber]
     );
@@ -186,7 +186,7 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
     const extraBedCost = formData.extraBed ? (hotelConfig.extraBedPrice || 0) : 0;
     const mealCosts = calculateMealCosts();
     const baseAmount = (formData.farePerNight + extraBedCost + mealCosts) * selectedRooms.length;
-    
+
     // Apply company discount if selected
     let finalAmount = baseAmount;
     if (formData.companyId) {
@@ -196,13 +196,13 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
         finalAmount = baseAmount - discount;
       }
     }
-    
+
     return { baseAmount, finalAmount };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (selectedRooms.length === 0) {
       toast({
         title: "No Rooms Selected",
@@ -215,7 +215,7 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
     try {
       const selectedCompany = companies.find(c => c.id === formData.companyId);
       const { finalAmount } = calculateTotalAmount();
-      
+
       const bulkBookingPromises = selectedRooms.map(roomNumber => {
         const booking = {
           roomNumber,
@@ -239,17 +239,17 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
           isBulkBooking: true,
           bulkBookingRooms: selectedRooms
         };
-        
+
         return DashboardService.createBooking(booking);
       });
 
       await Promise.all(bulkBookingPromises);
-      
+
       toast({
         title: "Bulk Booking Confirmed",
         description: `${selectedRooms.length} rooms booked successfully for ${formData.primaryGuest.firstName} ${formData.primaryGuest.lastName}`
       });
-      
+
       onClose();
       resetForm();
       if (onRefresh) {
@@ -318,11 +318,10 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
                 {availableRooms.map(roomNumber => (
                   <div
                     key={roomNumber}
-                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                      selectedRooms.includes(roomNumber)
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedRooms.includes(roomNumber)
                         ? 'bg-primary text-primary-foreground border-primary'
                         : 'border-gray-300 hover:border-primary'
-                    }`}
+                      }`}
                     onClick={() => toggleRoomSelection(roomNumber)}
                   >
                     <div className="text-center">

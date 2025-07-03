@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { format, subDays } from 'date-fns';
-import DashboardService from '@/services/dashboard';
+import DashboardService from '@/services/DashboardService';
+import GuestRegistrationService from '@/services/GuestRegistrationService';
 
 const RevenueChart = () => {
   const [revenueData, setRevenueData] = useState<any[]>([]);
@@ -16,7 +17,7 @@ const RevenueChart = () => {
 
   const calculateRevenue = async () => {
     try {
-      const response = await DashboardService.getBookings();
+      const response = await GuestRegistrationService.getAllRegistrations();
       const bookings = response.data || [];
       const today = new Date();
       const last7Days = [];
