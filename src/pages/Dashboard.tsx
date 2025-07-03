@@ -136,6 +136,8 @@ const Dashboard = () => {
     setActiveTab('dashboard');
   };
 
+
+
   const handleBulkBookingOpen = () => {
     setIsBulkBookingOpen(true);
   };
@@ -167,14 +169,20 @@ const Dashboard = () => {
         <SidebarHeader className="p-4 border-b border-border">
           <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
             {hotelConfig.hotelLogo ? (
-              <img 
-                src={hotelConfig.hotelLogo} 
-                alt="Hotel logo" 
-                className="h-8 w-8 object-contain mr-3 group-data-[collapsible=icon]:mr-0"
-              />
-            ) : (
-              <Hotel className="h-8 w-8 text-primary mr-3 group-data-[collapsible=icon]:mr-0" />
-            )}
+  <img
+    src={
+      hotelConfig.hotelLogo.startsWith("data:image")
+        ? hotelConfig.hotelLogo
+        : `data:image/png;base64,${hotelConfig.hotelLogo}`
+    }
+    alt="Hotel logo"
+    className="h-8 w-8 object-contain mr-3 group-data-[collapsible=icon]:mr-0"
+  />
+) : (
+  <div className="h-8 w-8 bg-gray-200 flex items-center justify-center mr-3 group-data-[collapsible=icon]:mr-0">
+    <span className="text-xs text-gray-500">No Logo</span>
+  </div>
+)}
             <div className="group-data-[collapsible=icon]:hidden">
               <h1 className="text-lg font-bold text-foreground">
                 {hotelConfig.hotelName || 'GuestFlow'}
