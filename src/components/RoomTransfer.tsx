@@ -13,9 +13,10 @@ interface RoomTransferProps {
   isOpen: boolean;
   onClose: () => void;
   targetRoomNumber?: string;
+  onRefresh?: () => void;
 }
 
-const RoomTransfer = ({ isOpen, onClose, targetRoomNumber }: RoomTransferProps) => {
+const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTransferProps) => {
   const [occupiedRooms, setOccupiedRooms] = useState<any[]>([]);
   const [availableRooms, setAvailableRooms] = useState<string[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<string>('');
@@ -139,6 +140,12 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber }: RoomTransferProps) 
       setRemarks('');
       
       onClose();
+      
+      // Trigger refresh if callback is provided
+      if (onRefresh) {
+        onRefresh();
+      }
+      
       window.dispatchEvent(new CustomEvent('refreshDashboard'));
     } catch (error) {
       console.error('Error during room transfer:', error);

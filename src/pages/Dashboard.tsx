@@ -33,7 +33,7 @@ import BulkBooking from '@/components/BulkBooking';
 import BillGeneration from '@/components/BillGeneration';
 import RoomTransfer from '@/components/RoomTransfer';
 import HotelService from '@/services/hotel';
-import CompanyService from '@/services/company';
+import DashboardService from '@/services/dashboard';
 
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -172,7 +172,6 @@ const Dashboard = () => {
     window.dispatchEvent(new CustomEvent('refreshDashboard'));
   };
 
-  // ... keep existing code (menuItems and availableMenuItems)
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: CalendarDays, roles: ['superadmin', 'user'] },
     { id: 'guests', label: 'Guest List', icon: Users, roles: ['superadmin', 'user'] },
