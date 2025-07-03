@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { format, subDays } from 'date-fns';
+import DashboardService from '@/services/dashboard';
 
 const RevenueChart = () => {
   const [revenueData, setRevenueData] = useState<any[]>([]);
@@ -13,47 +14,55 @@ const RevenueChart = () => {
     calculateRevenue();
   }, []);
 
-  const calculateRevenue = () => {
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    const today = new Date();
-    const last7Days = [];
-    
-    // Generate last 7 days data
-    for (let i = 6; i >= 0; i--) {
-      const date = subDays(today, i);
-      const dateStr = format(date, 'yyyy-MM-dd');
+  const calculateRevenue = async () => {
+    try {
+      const response = await DashboardService.getBookings();
+      const bookings = response.data || [];
+      const today = new Date();
+      const last7Days = [];
       
-      // Calculate revenue for this date
-      const dayBookings = bookings.filter((booking: any) => {
+      // Generate last 7 days data
+      for (let i = 6; i >= 0; i--) {
+        const date = subDays(today, i);
+        const dateStr = format(date, 'yyyy-MM-dd');
+        
+        // Calculate revenue for this date
+        const dayBookings = bookings.filter((booking: any) => {
+          const checkInDate = format(new Date(booking.checkInDate), 'yyyy-MM-dd');
+          return checkInDate === dateStr && booking.status === 'active';
+        });
+        
+        const revenue = dayBookings.reduce((sum: number, booking: any) => {
+          return sum + (booking.farePerNight || 0);
+        }, 0);
+        
+        last7Days.push({
+          date: format(date, 'MMM dd'),
+          revenue: revenue,
+          bookings: dayBookings.length
+        });
+      }
+      
+      setRevenueData(last7Days);
+      
+      // Calculate today's revenue
+      const todayStr = format(today, 'yyyy-MM-dd');
+      const todayBookings = bookings.filter((booking: any) => {
         const checkInDate = format(new Date(booking.checkInDate), 'yyyy-MM-dd');
-        return checkInDate === dateStr;
+        return checkInDate === todayStr && booking.status === 'active';
       });
       
-      const revenue = dayBookings.reduce((sum: number, booking: any) => {
+      const todayRev = todayBookings.reduce((sum: number, booking: any) => {
         return sum + (booking.farePerNight || 0);
       }, 0);
       
-      last7Days.push({
-        date: format(date, 'MMM dd'),
-        revenue: revenue,
-        bookings: dayBookings.length
-      });
+      setTodayRevenue(todayRev);
+    } catch (error) {
+      console.error('Error calculating revenue:', error);
+      // Fallback to default data if service fails
+      setRevenueData([]);
+      setTodayRevenue(0);
     }
-    
-    setRevenueData(last7Days);
-    
-    // Calculate today's revenue
-    const todayStr = format(today, 'yyyy-MM-dd');
-    const todayBookings = bookings.filter((booking: any) => {
-      const checkInDate = format(new Date(booking.checkInDate), 'yyyy-MM-dd');
-      return checkInDate === todayStr;
-    });
-    
-    const todayRev = todayBookings.reduce((sum: number, booking: any) => {
-      return sum + (booking.farePerNight || 0);
-    }, 0);
-    
-    setTodayRevenue(todayRev);
   };
 
   return (

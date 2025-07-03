@@ -32,6 +32,8 @@ import CompanyMaster from '@/components/CompanyMaster';
 import BulkBooking from '@/components/BulkBooking';
 import BillGeneration from '@/components/BillGeneration';
 import RoomTransfer from '@/components/RoomTransfer';
+import HotelService from '@/services/hotel';
+import CompanyService from '@/services/company';
 
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -118,10 +120,25 @@ const Dashboard = () => {
     };
   }, [navigate]);
 
-  const loadHotelConfig = () => {
-    const savedConfig = localStorage.getItem('hotelConfig');
-    if (savedConfig) {
-      setHotelConfig(JSON.parse(savedConfig));
+  const loadHotelConfig = async () => {
+    try {
+      const response = await HotelService.getHotelConfig();
+      if (response.data) {
+        setHotelConfig(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading hotel config:', error);
+      // Fallback to default config if service fails
+      setHotelConfig({
+        hotelName: 'GuestFlow Hotel Management',
+        totalFloors: 2,
+        roomsPerFloor: 6,
+        roomTypes: [
+          { name: 'Standard', price: 1500 },
+          { name: 'Deluxe', price: 2500 },
+          { name: 'Suite', price: 4000 }
+        ]
+      });
     }
   };
 
@@ -135,8 +152,6 @@ const Dashboard = () => {
   const handleLogoClick = () => {
     setActiveTab('dashboard');
   };
-
-
 
   const handleBulkBookingOpen = () => {
     setIsBulkBookingOpen(true);
@@ -152,6 +167,12 @@ const Dashboard = () => {
     console.log(`Room ${roomNumber} status changed to ${status}`);
   };
 
+  const refreshDashboard = () => {
+    setRefreshKey(prev => prev + 1);
+    window.dispatchEvent(new CustomEvent('refreshDashboard'));
+  };
+
+  // ... keep existing code (menuItems and availableMenuItems)
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: CalendarDays, roles: ['superadmin', 'user'] },
     { id: 'guests', label: 'Guest List', icon: Users, roles: ['superadmin', 'user'] },
@@ -169,20 +190,20 @@ const Dashboard = () => {
         <SidebarHeader className="p-4 border-b border-border">
           <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
             {hotelConfig.hotelLogo ? (
-  <img
-    src={
-      hotelConfig.hotelLogo.startsWith("data:image")
-        ? hotelConfig.hotelLogo
-        : `data:image/png;base64,${hotelConfig.hotelLogo}`
-    }
-    alt="Hotel logo"
-    className="h-8 w-8 object-contain mr-3 group-data-[collapsible=icon]:mr-0"
-  />
-) : (
-  <div className="h-8 w-8 bg-gray-200 flex items-center justify-center mr-3 group-data-[collapsible=icon]:mr-0">
-    <span className="text-xs text-gray-500">No Logo</span>
-  </div>
-)}
+              <img
+                src={
+                  hotelConfig.hotelLogo.startsWith("data:image")
+                    ? hotelConfig.hotelLogo
+                    : `data:image/png;base64,${hotelConfig.hotelLogo}`
+                }
+                alt="Hotel logo"
+                className="h-8 w-8 object-contain mr-3 group-data-[collapsible=icon]:mr-0"
+              />
+            ) : (
+              <div className="h-8 w-8 bg-gray-200 flex items-center justify-center mr-3 group-data-[collapsible=icon]:mr-0">
+                <span className="text-xs text-gray-500">No Logo</span>
+              </div>
+            )}
             <div className="group-data-[collapsible=icon]:hidden">
               <h1 className="text-lg font-bold text-foreground">
                 {hotelConfig.hotelName || 'GuestFlow'}
@@ -319,19 +340,19 @@ const Dashboard = () => {
               )}
 
               {activeTab === 'guests' && (
-                <GuestList key={refreshKey} />
+                <GuestList key={refreshKey} onRefresh={refreshDashboard} />
               )}
 
               {activeTab === 'users' && userRole === 'superadmin' && (
-                <UserManagement />
+                <UserManagement onRefresh={refreshDashboard} />
               )}
 
               {activeTab === 'hotel' && userRole === 'superadmin' && (
-                <HotelRegistration />
+                <HotelRegistration onRefresh={refreshDashboard} />
               )}
 
               {activeTab === 'companies' && userRole === 'superadmin' && (
-                <CompanyMaster />
+                <CompanyMaster onRefresh={refreshDashboard} />
               )}
 
               {activeTab === 'reports' && userRole === 'superadmin' && (
@@ -343,11 +364,12 @@ const Dashboard = () => {
       </SidebarProvider>
 
       {/* All Dialog Components */}
-      <GuestRegistration />
+      <GuestRegistration onRefresh={refreshDashboard} />
       <BulkBooking 
         isOpen={isBulkBookingOpen}
         onClose={() => setIsBulkBookingOpen(false)}
         selectedDate={selectedDate}
+        onRefresh={refreshDashboard}
       />
       <BillGeneration
         isOpen={isBillGenerationOpen}
@@ -357,6 +379,7 @@ const Dashboard = () => {
         isOpen={isRoomTransferOpen}
         onClose={() => setIsRoomTransferOpen(false)}
         targetRoomNumber={targetRoomForTransfer}
+        onRefresh={refreshDashboard}
       />
     </div>
   );

@@ -9,14 +9,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import CompanyService from '@/services/company';
+import HotelService from '@/services/hotel';
+import DashboardService from '@/services/dashboard';
 
 interface BulkBookingProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDate: Date;
+  onRefresh?: () => void;
 }
 
-const BulkBooking = ({ isOpen, onClose, selectedDate }: BulkBookingProps) => {
+const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingProps) => {
   const [availableRooms, setAvailableRooms] = useState<string[]>([]);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -61,46 +65,71 @@ const BulkBooking = ({ isOpen, onClose, selectedDate }: BulkBookingProps) => {
     }
   }, [isOpen, selectedDate]);
 
-  const loadAvailableRooms = () => {
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    const roomStatuses = JSON.parse(localStorage.getItem('roomStatuses') || '{}');
-    const hotelConfig = JSON.parse(localStorage.getItem('hotelConfig') || '{}');
-    
-    const allRooms: string[] = [];
-    if (hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
-      for (let floor = 1; floor <= hotelConfig.totalFloors; floor++) {
-        for (let room = 1; room <= hotelConfig.roomsPerFloor; room++) {
-          const roomNumber = `${floor}0${room}`;
-          allRooms.push(roomNumber);
+  const loadAvailableRooms = async () => {
+    try {
+      const [bookingsResponse, roomStatusesResponse, hotelConfigResponse] = await Promise.all([
+        DashboardService.getBookings(),
+        DashboardService.getRoomStatuses(),
+        HotelService.getHotelConfig()
+      ]);
+
+      const bookings = bookingsResponse.data || [];
+      const roomStatuses = roomStatusesResponse.data || {};
+      const hotelConfig = hotelConfigResponse.data || {};
+      
+      const allRooms: string[] = [];
+      if (hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
+        for (let floor = 1; floor <= hotelConfig.totalFloors; floor++) {
+          for (let room = 1; room <= hotelConfig.roomsPerFloor; room++) {
+            const roomNumber = `${floor}0${room}`;
+            allRooms.push(roomNumber);
+          }
         }
       }
-    }
-    
-    const available = allRooms.filter(roomNumber => {
-      const isOccupied = bookings.some((booking: any) => {
-        const checkIn = new Date(booking.checkInDate);
-        const checkOut = new Date(booking.checkOutDate);
-        return booking.roomNumber === roomNumber && 
-               selectedDate >= checkIn && selectedDate <= checkOut;
+      
+      const available = allRooms.filter(roomNumber => {
+        const isOccupied = bookings.some((booking: any) => {
+          const checkIn = new Date(booking.checkInDate);
+          const checkOut = new Date(booking.checkOutDate);
+          return booking.roomNumber === roomNumber && 
+                 selectedDate >= checkIn && selectedDate <= checkOut &&
+                 booking.status === 'active';
+        });
+        const status = roomStatuses[roomNumber];
+        return !isOccupied && status !== 'out-of-order' && status !== 'cleaning';
       });
-      const status = roomStatuses[roomNumber];
-      return !isOccupied && status !== 'out-of-order' && status !== 'cleaning';
-    });
-    
-    setAvailableRooms(available);
-  };
-
-  const loadCompanies = () => {
-    const savedCompanies = localStorage.getItem('companies');
-    if (savedCompanies) {
-      setCompanies(JSON.parse(savedCompanies));
+      
+      setAvailableRooms(available);
+    } catch (error) {
+      console.error('Error loading available rooms:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load available rooms",
+        variant: "destructive"
+      });
     }
   };
 
-  const loadHotelConfig = () => {
-    const savedConfig = localStorage.getItem('hotelConfig');
-    if (savedConfig) {
-      setHotelConfig(JSON.parse(savedConfig));
+  const loadCompanies = async () => {
+    try {
+      const response = await CompanyService.getAllCompanies();
+      setCompanies(response.data || []);
+    } catch (error) {
+      console.error('Error loading companies:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load companies",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const loadHotelConfig = async () => {
+    try {
+      const response = await HotelService.getHotelConfig();
+      setHotelConfig(response.data || {});
+    } catch (error) {
+      console.error('Error loading hotel config:', error);
     }
   };
 
@@ -171,7 +200,7 @@ const BulkBooking = ({ isOpen, onClose, selectedDate }: BulkBookingProps) => {
     return { baseAmount, finalAmount };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (selectedRooms.length === 0) {
@@ -183,49 +212,57 @@ const BulkBooking = ({ isOpen, onClose, selectedDate }: BulkBookingProps) => {
       return;
     }
 
-    const selectedCompany = companies.find(c => c.id === formData.companyId);
-    const { finalAmount } = calculateTotalAmount();
-    
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    
-    selectedRooms.forEach(roomNumber => {
-      const booking = {
-        id: Date.now() + Math.random(),
-        roomNumber,
-        ...formData,
-        totalGuests: 1,
-        remainingPayment: Math.max(0, finalAmount / selectedRooms.length - formData.advancePayment),
-        createdAt: new Date().toISOString(),
-        companyDetails: selectedCompany,
-        billing: {
-          baseFare: formData.farePerNight,
-          extraBedCost: formData.extraBed ? (hotelConfig.extraBedPrice || 0) : 0,
-          mealCosts: calculateMealCosts(),
-          totalBeforeDiscount: formData.farePerNight + (formData.extraBed ? (hotelConfig.extraBedPrice || 0) : 0) + calculateMealCosts(),
-          discountAmount: selectedCompany ? ((formData.farePerNight + (formData.extraBed ? (hotelConfig.extraBedPrice || 0) : 0) + calculateMealCosts()) * selectedCompany.roomPriceDiscount) / 100 : 0,
-          discountPercentage: selectedCompany?.roomPriceDiscount || 0,
-          finalFare: finalAmount / selectedRooms.length,
-          gstRate: selectedCompany?.gstPercentage || 0,
-          gstAmount: selectedCompany ? ((finalAmount / selectedRooms.length) * selectedCompany.gstPercentage) / 100 : 0,
-          grandTotal: selectedCompany ? (finalAmount / selectedRooms.length) + (((finalAmount / selectedRooms.length) * selectedCompany.gstPercentage) / 100) : finalAmount / selectedRooms.length
-        },
-        isBulkBooking: true,
-        bulkBookingRooms: selectedRooms
-      };
+    try {
+      const selectedCompany = companies.find(c => c.id === formData.companyId);
+      const { finalAmount } = calculateTotalAmount();
       
-      bookings.push(booking);
-    });
-    
-    localStorage.setItem('bookings', JSON.stringify(bookings));
-    
-    toast({
-      title: "Bulk Booking Confirmed",
-      description: `${selectedRooms.length} rooms booked successfully for ${formData.primaryGuest.firstName} ${formData.primaryGuest.lastName}`
-    });
-    
-    onClose();
-    resetForm();
-    window.dispatchEvent(new CustomEvent('refreshDashboard'));
+      const bulkBookingPromises = selectedRooms.map(roomNumber => {
+        const booking = {
+          roomNumber,
+          ...formData,
+          totalGuests: 1,
+          remainingPayment: Math.max(0, finalAmount / selectedRooms.length - formData.advancePayment),
+          companyDetails: selectedCompany,
+          status: 'active',
+          billing: {
+            baseFare: formData.farePerNight,
+            extraBedCost: formData.extraBed ? (hotelConfig.extraBedPrice || 0) : 0,
+            mealCosts: calculateMealCosts(),
+            totalBeforeDiscount: formData.farePerNight + (formData.extraBed ? (hotelConfig.extraBedPrice || 0) : 0) + calculateMealCosts(),
+            discountAmount: selectedCompany ? ((formData.farePerNight + (formData.extraBed ? (hotelConfig.extraBedPrice || 0) : 0) + calculateMealCosts()) * selectedCompany.roomPriceDiscount) / 100 : 0,
+            discountPercentage: selectedCompany?.roomPriceDiscount || 0,
+            finalFare: finalAmount / selectedRooms.length,
+            gstRate: selectedCompany?.gstPercentage || 0,
+            gstAmount: selectedCompany ? ((finalAmount / selectedRooms.length) * selectedCompany.gstPercentage) / 100 : 0,
+            grandTotal: selectedCompany ? (finalAmount / selectedRooms.length) + (((finalAmount / selectedRooms.length) * selectedCompany.gstPercentage) / 100) : finalAmount / selectedRooms.length
+          },
+          isBulkBooking: true,
+          bulkBookingRooms: selectedRooms
+        };
+        
+        return DashboardService.createBooking(booking);
+      });
+
+      await Promise.all(bulkBookingPromises);
+      
+      toast({
+        title: "Bulk Booking Confirmed",
+        description: `${selectedRooms.length} rooms booked successfully for ${formData.primaryGuest.firstName} ${formData.primaryGuest.lastName}`
+      });
+      
+      onClose();
+      resetForm();
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error creating bulk booking:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create bulk booking",
+        variant: "destructive"
+      });
+    }
   };
 
   const resetForm = () => {

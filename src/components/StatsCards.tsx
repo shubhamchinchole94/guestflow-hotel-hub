@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Hotel, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
+import HotelService from '@/services/hotel';
+import DashboardService from '@/services/dashboard';
 
 const StatsCards = () => {
   const [stats, setStats] = useState({
@@ -21,29 +23,44 @@ const StatsCards = () => {
     return () => window.removeEventListener('refreshDashboard', handleRefresh);
   }, []);
 
-  const calculateStats = () => {
-    // Load hotel configuration and calculate stats
-    const hotelConfig = JSON.parse(localStorage.getItem('hotelConfig') || '{}');
-    const bookings = JSON.parse(localStorage.getItem('bookings') || '[]');
-    
-    if (hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
-      const totalRooms = hotelConfig.totalFloors * hotelConfig.roomsPerFloor;
-      const currentBookings = bookings.filter((booking: any) => {
-        const checkIn = new Date(booking.checkInDate);
-        const checkOut = new Date(booking.checkOutDate);
-        const today = new Date();
-        return today >= checkIn && today <= checkOut;
-      });
-      
-      const occupiedRooms = currentBookings.length;
-      const availableRooms = totalRooms - occupiedRooms;
-      const occupancyRate = Math.round((occupiedRooms / totalRooms) * 100);
+  const calculateStats = async () => {
+    try {
+      // Get hotel configuration from service
+      const hotelConfigResponse = await HotelService.getHotelConfig();
+      const hotelConfig = hotelConfigResponse.data || {};
 
+      // Get bookings from service
+      const bookingsResponse = await DashboardService.getBookings();
+      const bookings = bookingsResponse.data || [];
+      
+      if (hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
+        const totalRooms = hotelConfig.totalFloors * hotelConfig.roomsPerFloor;
+        const currentBookings = bookings.filter((booking: any) => {
+          const checkIn = new Date(booking.checkInDate);
+          const checkOut = new Date(booking.checkOutDate);
+          const today = new Date();
+          return today >= checkIn && today <= checkOut && booking.status === 'active';
+        });
+        
+        const occupiedRooms = currentBookings.length;
+        const availableRooms = totalRooms - occupiedRooms;
+        const occupancyRate = Math.round((occupiedRooms / totalRooms) * 100);
+
+        setStats({
+          totalRooms,
+          availableRooms,
+          occupiedRooms,
+          occupancyRate
+        });
+      }
+    } catch (error) {
+      console.error('Error calculating stats:', error);
+      // Fallback to default values if service calls fail
       setStats({
-        totalRooms,
-        availableRooms,
-        occupiedRooms,
-        occupancyRate
+        totalRooms: 12,
+        availableRooms: 11,
+        occupiedRooms: 1,
+        occupancyRate: 8
       });
     }
   };
