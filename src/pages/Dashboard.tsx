@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,9 +53,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const role = localStorage.getItem('userRole');
-    const user = localStorage.getItem('username');
-    const loginTime = localStorage.getItem('loginTime');
+    const role = sessionStorage.getItem('userRole');
+    const user = sessionStorage.getItem('username');
+    const loginTime = sessionStorage.getItem('loginTime');
 
     if (!role || !loginTime) {
       navigate('/login');
@@ -88,7 +89,7 @@ const Dashboard = () => {
 
     // Check for bill generation trigger
     const handleBillGeneration = () => {
-      const currentBill = localStorage.getItem('currentBill');
+      const currentBill = sessionStorage.getItem('currentBill');
       if (currentBill) {
         setIsBillGenerationOpen(true);
       }
@@ -96,7 +97,7 @@ const Dashboard = () => {
     window.addEventListener('generateBill', handleBillGeneration);
 
     const interval = setInterval(() => {
-      const currentLoginTime = localStorage.getItem('loginTime');
+      const currentLoginTime = sessionStorage.getItem('loginTime');
       if (currentLoginTime) {
         const currentTimestamp = new Date().getTime();
         const loginTimestamp = new Date(currentLoginTime).getTime();
@@ -131,20 +132,18 @@ const Dashboard = () => {
       setHotelConfig({
         hotelName: 'GuestFlow Hotel Management',
         totalFloors: 2,
-        roomsPerFloor: 6,
+        roomsPerFloor: 4,
         roomTypes: [
-          { name: 'Standard', price: 1500 },
-          { name: 'Deluxe', price: 2500 },
-          { name: 'Suite', price: 4000 }
+          { name: 'Regular', price: 1000 }
         ]
       });
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('username');
-    localStorage.removeItem('loginTime');
+    sessionStorage.removeItem('userRole');
+    sessionStorage.removeItem('username');
+    sessionStorage.removeItem('loginTime');
     navigate('/login');
   };
 
@@ -198,13 +197,13 @@ const Dashboard = () => {
                 className="h-8 w-8 object-contain mr-3 group-data-[collapsible=icon]:mr-0"
               />
             ) : (
-              <div className="h-8 w-8 bg-gray-200 flex items-center justify-center mr-3 group-data-[collapsible=icon]:mr-0">
-                <span className="text-xs text-gray-500">No Logo</span>
+              <div className="h-8 w-8 bg-blue-100 flex items-center justify-center mr-3 group-data-[collapsible=icon]:mr-0 rounded">
+                <span className="text-xs text-blue-600 font-bold">GF</span>
               </div>
             )}
             <div className="group-data-[collapsible=icon]:hidden">
               <h1 className="text-lg font-bold text-foreground">
-                {hotelConfig.hotelName || 'GuestFlow'}
+                GuestFlow
               </h1>
             </div>
           </div>
@@ -243,38 +242,17 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <SidebarProvider>
         <div className="min-h-screen flex w-full">
           <AppSidebar />
           <SidebarInset className="flex-1">
-            {/* Mobile Header */}
-            <header className="flex h-16 items-center justify-between px-4 border-b border-border bg-card/50 backdrop-blur-sm md:hidden">
-              <div className="flex items-center space-x-2">
-                <SidebarTrigger className="md:hidden" />
-                <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
-                  {hotelConfig.hotelLogo ? (
-                    <img
-                      src={hotelConfig.hotelLogo}
-                      alt="Hotel logo"
-                      className="h-6 w-6 object-contain mr-2"
-                    />
-                  ) : (
-                    <Hotel className="h-6 w-6 text-primary mr-2" />
-                  )}
-                  <h1 className="text-lg font-bold">
-                    {hotelConfig.hotelName || 'GuestFlow'}
-                  </h1>
-                </div>
-              </div>
-            </header>
-
-            {/* Desktop Header */}
-            <header className="hidden md:flex h-16 items-center justify-between px-6 border-b border-border bg-card/50 backdrop-blur-sm">
+            {/* Header */}
+            <header className="flex h-16 items-center justify-between px-6 border-b border-border bg-white">
               <div className="flex items-center space-x-4">
                 <SidebarTrigger />
-                <h1 className="text-2xl font-bold">
-                  {hotelConfig.hotelName || 'GuestFlow Hotel Management'}
+                <h1 className="text-xl font-semibold">
+                  GuestFlow Hotel Management
                 </h1>
               </div>
               <div className="flex items-center space-x-4">
@@ -289,42 +267,51 @@ const Dashboard = () => {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 p-4 md:p-6 overflow-auto">
+            <main className="flex-1 p-6 overflow-auto">
               {activeTab === 'dashboard' && (
-                <div className="space-y-4 md:space-y-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                    <h2 className="text-2xl md:text-3xl font-bold">Dashboard</h2>
-                    <p className="text-muted-foreground text-sm md:text-base">
+                <div className="space-y-6">
+                  {/* Dashboard Title and Date */}
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold">Dashboard</h2>
+                    <p className="text-muted-foreground">
                       {format(new Date(), 'EEEE, MMMM d, yyyy')}
                     </p>
                   </div>
 
+                  {/* Stats Cards */}
                   <StatsCards key={refreshKey} />
+
+                  {/* Revenue Charts */}
                   <RevenueChart key={refreshKey} />
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-                    <Card className="lg:col-span-1">
-                      <CardHeader>
-                        <CardTitle className="text-lg md:text-xl">Select Date</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={(date) => date && setSelectedDate(date)}
-                          className="rounded-md border w-full"
-                        />
-                        <Button
-                          variant="outline"
-                          className="w-full mt-4"
-                          onClick={() => setSelectedDate(new Date())}
-                        >
-                          Go to Today
-                        </Button>
-                      </CardContent>
-                    </Card>
+                  {/* Calendar and Room Grid Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    {/* Calendar - Takes 1 column */}
+                    <div className="lg:col-span-1">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Select Date</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={(date) => date && setSelectedDate(date)}
+                            className="rounded-md border w-full"
+                          />
+                          <Button
+                            variant="outline"
+                            className="w-full mt-4"
+                            onClick={() => setSelectedDate(new Date())}
+                          >
+                            Go to Today
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
 
-                    <div className="lg:col-span-2">
+                    {/* Room Grid - Takes 3 columns */}
+                    <div className="lg:col-span-3">
                       <RoomGrid
                         selectedDate={selectedDate}
                         key={refreshKey}
