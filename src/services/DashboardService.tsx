@@ -34,6 +34,18 @@ class DashboardService {
       headers: HEADERS,
     });
   }
+
+  getBookings() {
+    return axios.get(`${DASHBOARD_SERVICE_BASE_URL}/bookings`, {
+      headers: HEADERS,
+    });
+  }
+
+  createBooking(bookingData: any) {
+    return axios.post(`${DASHBOARD_SERVICE_BASE_URL}/bookings`, bookingData, {
+      headers: HEADERS,
+    });
+  }
 }
 
 export default new DashboardService();

@@ -338,19 +338,19 @@ const Dashboard = () => {
               )}
 
               {activeTab === 'guests' && (
-                <GuestList key={refreshKey} onRefresh={refreshDashboard} />
+                <GuestList key={refreshKey} />
               )}
 
               {activeTab === 'users' && userRole === 'superadmin' && (
-                <UserManagement onRefresh={refreshDashboard} />
+                <UserManagement />
               )}
 
               {activeTab === 'hotel' && userRole === 'superadmin' && (
-                <HotelRegistration onRefresh={refreshDashboard} />
+                <HotelRegistration />
               )}
 
               {activeTab === 'companies' && userRole === 'superadmin' && (
-                <CompanyMaster onRefresh={refreshDashboard} />
+                <CompanyMaster />
               )}
 
               {activeTab === 'reports' && userRole === 'superadmin' && (
@@ -362,7 +362,7 @@ const Dashboard = () => {
       </SidebarProvider>
 
       {/* All Dialog Components */}
-      <GuestRegistration onRefresh={refreshDashboard} />
+      <GuestRegistration />
       <BulkBooking
         isOpen={isBulkBookingOpen}
         onClose={() => setIsBulkBookingOpen(false)}
