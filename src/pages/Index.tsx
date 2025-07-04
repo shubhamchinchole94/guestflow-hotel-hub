@@ -8,8 +8,8 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is already logged in
-    const userRole = localStorage.getItem('userRole');
+    // Check if user is already logged in using sessionStorage
+    const userRole = sessionStorage.getItem('userRole');
     if (userRole) {
       navigate('/dashboard');
     }

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -26,33 +27,33 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    const user = await LoginService.login(credentials); // ✅ Await here
+    try {
+      const user = await LoginService.login(credentials);
 
-    console.log("Response of user", user);
+      console.log("Response of user", user);
 
-    localStorage.setItem('token', user.token);
-    localStorage.setItem('userRole', user.role);
-    localStorage.setItem('username', user.username);
-    localStorage.setItem('loginTime', new Date().toISOString());
+      // Store in sessionStorage to match Dashboard expectations
+      sessionStorage.setItem('token', user.token);
+      sessionStorage.setItem('userRole', user.role);
+      sessionStorage.setItem('username', user.username);
+      sessionStorage.setItem('loginTime', new Date().toISOString());
 
-    toast({
-      title: 'Login successful',
-      description: `Welcome back, ${user.username}!`,
-    });
+      toast({
+        title: 'Login successful',
+        description: `Welcome back, ${user.username}!`,
+      });
 
-    navigate('/dashboard');
-  } catch (error: any) {
-    toast({
-      title: 'Login failed',
-      description: error?.response?.data?.message || 'Invalid username or password',
-      variant: 'destructive',
-    });
-  }
-};
-
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: 'Login failed',
+        description: error?.response?.data?.message || 'Invalid username or password',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
