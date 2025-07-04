@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,7 @@ interface Room {
   price: number;
   isOccupied: boolean;
   guest: any | null;
-  status: 'available' | 'occupied' | 'cleaning' | 'out-of-order';
+  status: 'available' | 'booked' | 'cleaning' | 'unavailable';
   hasWakeUpCall?: boolean;
 }
 
@@ -35,17 +36,14 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
 
   useEffect(() => {
     generateRooms();
-   
 
     const handleRefresh = () => {
       generateRooms();
-     
     };
     window.addEventListener('refreshDashboard', handleRefresh);
 
     return () => window.removeEventListener('refreshDashboard', handleRefresh);
   }, [selectedDate]);
-
 
   const generateRooms = async () => {
     try {
@@ -67,7 +65,6 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
             const roomNumber = `${floor}0${room}`;
             const status = roomStatuses[roomNumber] || 'available';
             
-
             defaultRooms.push({
               roomNumber,
               floor,
@@ -104,7 +101,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
 
           let status = roomStatuses[roomNumber] || 'available';
           if (roomBooking) {
-            status = 'occupied';
+            status = 'booked';
           }
 
           generatedRooms.push({
@@ -115,7 +112,6 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
             isOccupied: !!roomBooking,
             guest: roomBooking || null,
             status: status as any,
-           
           });
         }
       }
@@ -145,8 +141,8 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
   };
 
   const handleRoomClick = (room: Room) => {
-    if (room.status === 'out-of-order') {
-      return; // Don't allow any action on out-of-order rooms
+    if (room.status === 'unavailable') {
+      return; // Don't allow any action on unavailable rooms
     }
 
     if (room.isOccupied && room.guest) {
@@ -171,20 +167,29 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
     }
   };
 
+  const handleCheckout = async (roomNumber: string) => {
+    try {
+      // Update room status to cleaning after checkout
+      await handleRoomStatusChange(roomNumber, 'cleaning');
+    } catch (error) {
+      console.error('Error during checkout:', error);
+    }
+  };
+
   const getRoomStatusColor = (status: string, hasWakeUpCall?: boolean) => {
     let baseColor = '';
     switch (status) {
       case 'available':
         baseColor = 'bg-green-100 border-green-300 text-green-800';
         break;
-      case 'occupied':
+      case 'booked':
         baseColor = 'bg-red-100 border-red-300 text-red-800';
         break;
       case 'cleaning':
         baseColor = 'bg-yellow-100 border-yellow-300 text-yellow-800';
         break;
-      case 'out-of-order':
-        baseColor = 'bg-gray-100 border-gray-400 text-gray-600';
+      case 'unavailable':
+        baseColor = 'bg-orange-100 border-orange-400 text-orange-800';
         break;
       default:
         baseColor = 'bg-gray-100 border-gray-300 text-gray-800';
@@ -201,12 +206,12 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
     switch (status) {
       case 'available':
         return 'Available';
-      case 'occupied':
-        return 'Occupied';
+      case 'booked':
+        return 'Booked';
       case 'cleaning':
         return 'Cleaning';
-      case 'out-of-order':
-        return 'Out of Order';
+      case 'unavailable':
+        return 'Unavailable';
       default:
         return 'Unknown';
     }
@@ -256,7 +261,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                   {floorRooms.map((room) => (
                     <div
                       key={room.roomNumber}
-                      className={`p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${room.status === 'out-of-order'
+                      className={`p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${room.status === 'unavailable'
                           ? 'opacity-50 cursor-not-allowed'
                           : hoveredRoom === room.roomNumber
                             ? getRoomStatusColor(room.status, room.hasWakeUpCall)
@@ -277,7 +282,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
 
                         <div className="flex flex-col items-center space-y-1">
                           <Badge variant="outline" className={`${getRoomStatusColor(room.status, room.hasWakeUpCall)}`}>
-                            {room.status === 'out-of-order' && <AlertTriangle className="h-3 w-3 mr-1" />}
+                            {room.status === 'unavailable' && <AlertTriangle className="h-3 w-3 mr-1" />}
                             {getRoomStatusText(room.status)}
                           </Badge>
 
@@ -300,6 +305,17 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                               className="w-full text-xs mb-1 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
                             >
                               View Details
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-xs mb-1 bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCheckout(room.roomNumber);
+                              }}
+                            >
+                              Checkout
                             </Button>
                             {onRoomTransferOpen && (
                               <Button
@@ -345,13 +361,13 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                               className="w-full text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleRoomStatusChange(room.roomNumber, 'out-of-order');
+                                handleRoomStatusChange(room.roomNumber, 'unavailable');
                               }}
                             >
-                              Out of Order
+                              Mark Unavailable
                             </Button>
                           </div>
-                        ) : room.status === 'out-of-order' ? (
+                        ) : room.status === 'unavailable' ? (
                           <div className="space-y-1 mt-2">
                             <Button
                               variant="outline"
