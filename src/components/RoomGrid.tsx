@@ -179,13 +179,13 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
   const getRoomStatusColor = (status: string) => {
     switch (status) {
       case 'available':
-        return 'bg-white border-gray-200';
+        return 'bg-green-50 border-green-200 hover:bg-green-100';
       case 'booked':
-        return 'bg-white border-gray-200';
+        return 'bg-red-50 border-red-200 hover:bg-red-100';
       case 'cleaning':
-        return 'bg-white border-gray-200';
+        return 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100';
       case 'unavailable':
-        return 'bg-white border-gray-200';
+        return 'bg-orange-50 border-orange-200 hover:bg-orange-100';
       default:
         return 'bg-white border-gray-200';
     }
@@ -280,11 +280,11 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
             <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
               Floor {floor}
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               {floorRooms.map((room) => (
                 <div
                   key={room.roomNumber}
-                  className={`relative bg-white border-2 rounded-lg p-4 transition-all duration-200 hover:shadow-md ${getRoomStatusColor(room.status)}`}
+                  className={`relative border-2 rounded-lg p-4 transition-all duration-200 hover:shadow-md ${getRoomStatusColor(room.status)}`}
                 >
                   {/* Room Header */}
                   <div className="text-center mb-4">
@@ -301,8 +301,9 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                     </div>
                   </div>
 
-                  {/* Action Button */}
-                  <div className="text-center">
+                  {/* Action Buttons */}
+                  <div className="space-y-2">
+                    {/* Primary Action Button */}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -319,6 +320,32 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                     >
                       {getActionButtonText(room.status)}
                     </Button>
+
+                    {/* Transfer Button - Show only for booked rooms */}
+                    {room.status === 'booked' && onRoomTransferOpen && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                        onClick={() => onRoomTransferOpen(room.roomNumber)}
+                      >
+                        <ArrowRight className="h-4 w-4 mr-1" />
+                        Transfer
+                      </Button>
+                    )}
+
+                    {/* Mark Out of Order Button - Show by default for available/cleaning rooms */}
+                    {(room.status === 'available' || room.status === 'cleaning') && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-orange-600 hover:text-orange-700 border-orange-200 hover:border-orange-300"
+                        onClick={() => handleRoomStatusChange(room.roomNumber, 'unavailable')}
+                      >
+                        <AlertTriangle className="h-4 w-4 mr-1" />
+                        Mark Out of Order
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
