@@ -179,30 +179,30 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
   const getRoomStatusColor = (status: string) => {
     switch (status) {
       case 'available':
-        return 'bg-green-100 border-green-300';
+        return 'bg-white border-gray-200';
       case 'booked':
-        return 'bg-red-100 border-red-300';
+        return 'bg-white border-gray-200';
       case 'cleaning':
-        return 'bg-yellow-100 border-yellow-300';
+        return 'bg-white border-gray-200';
       case 'unavailable':
-        return 'bg-orange-100 border-orange-300';
+        return 'bg-white border-gray-200';
       default:
-        return 'bg-gray-100 border-gray-300';
+        return 'bg-white border-gray-200';
     }
   };
 
   const getRoomStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'available':
-        return 'bg-green-500 text-white';
+        return 'bg-green-500 hover:bg-green-600 text-white';
       case 'booked':
-        return 'bg-red-500 text-white';
+        return 'bg-red-500 hover:bg-red-600 text-white';
       case 'cleaning':
-        return 'bg-yellow-500 text-white';
+        return 'bg-yellow-500 hover:bg-yellow-600 text-white';
       case 'unavailable':
-        return 'bg-orange-500 text-white';
+        return 'bg-orange-500 hover:bg-orange-600 text-white';
       default:
-        return 'bg-gray-500 text-white';
+        return 'bg-gray-500 hover:bg-gray-600 text-white';
     }
   };
 
@@ -211,13 +211,43 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
       case 'available':
         return 'Available';
       case 'booked':
-        return 'Booked';
+        return 'Occupied';
       case 'cleaning':
         return 'Cleaning';
       case 'unavailable':
         return 'Out of Order';
       default:
         return 'Unknown';
+    }
+  };
+
+  const getActionButtonText = (status: string) => {
+    switch (status) {
+      case 'available':
+        return 'Click to Book';
+      case 'booked':
+        return 'View Details';
+      case 'cleaning':
+        return 'Mark Available';
+      case 'unavailable':
+        return 'Mark Available';
+      default:
+        return 'Click to Book';
+    }
+  };
+
+  const getActionButtonColor = (status: string) => {
+    switch (status) {
+      case 'available':
+        return 'text-green-600 hover:text-green-700';
+      case 'booked':
+        return 'text-red-600 hover:text-red-700';
+      case 'cleaning':
+        return 'text-yellow-600 hover:text-yellow-700';
+      case 'unavailable':
+        return 'text-orange-600 hover:text-orange-700';
+      default:
+        return 'text-gray-600 hover:text-gray-700';
     }
   };
 
@@ -230,221 +260,73 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
   }, {});
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-xl">
-              Rooms Status - {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-            </CardTitle>
-            {onBulkBookingOpen && (
-              <Button onClick={onBulkBookingOpen} size="sm" className="bg-gray-800 hover:bg-gray-700 text-white">
-                <Users className="h-4 w-4 mr-2" />
-                Bulk Booking
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-8">
-            {Object.entries(groupedRooms).map(([floor, floorRooms]) => (
-              <div key={floor}>
-                <h3 className="text-lg font-semibold mb-4">Floor {floor}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {floorRooms.map((room) => (
-                    <div
-                      key={room.roomNumber}
-                      className={`relative bg-white border-2 rounded-lg overflow-hidden transition-all duration-200 ${getRoomStatusColor(room.status)} ${
-                        hoveredRoom === room.roomNumber ? 'shadow-lg transform scale-105' : 'shadow-sm'
-                      }`}
-                      onMouseEnter={() => setHoveredRoom(room.roomNumber)}
-                      onMouseLeave={() => setHoveredRoom(null)}
-                    >
-                      {/* Room Header */}
-                      <div className="p-4 text-center">
-                        <div className="text-lg font-bold mb-1">Room</div>
-                        <div className="text-2xl font-bold text-gray-800 mb-2">
-                          {room.roomNumber}
-                        </div>
-                        <div className="text-sm text-gray-600 mb-3">
-                          {room.type} - ₹{room.price}/night
-                        </div>
-
-                        {/* Status Badge */}
-                        <div className="mb-4">
-                          <Badge className={`${getRoomStatusBadgeColor(room.status)} px-3 py-1`}>
-                            {getRoomStatusText(room.status)}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="bg-gray-800 p-3 space-y-2">
-                        {room.status === 'available' ? (
-                          <>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="w-full bg-gray-700 hover:bg-gray-600 text-white"
-                              onClick={() => handleRoomClick(room)}
-                            >
-                              Click to Book
-                            </Button>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1 text-xs bg-white text-gray-800 hover:bg-gray-100"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRoomStatusChange(room.roomNumber, 'unavailable');
-                                }}
-                              >
-                                Out of Order
-                              </Button>
-                              {onRoomTransferOpen && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="flex-1 text-xs bg-white text-gray-800 hover:bg-gray-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRoomTransferOpen(room.roomNumber);
-                                  }}
-                                >
-                                  Transfer Here
-                                </Button>
-                              )}
-                            </div>
-                          </>
-                        ) : room.status === 'booked' && room.isOccupied ? (
-                          <>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="w-full bg-gray-700 hover:bg-gray-600 text-white"
-                              onClick={() => handleRoomClick(room)}
-                            >
-                              Click to Book
-                            </Button>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1 text-xs bg-white text-gray-800 hover:bg-gray-100"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRoomStatusChange(room.roomNumber, 'unavailable');
-                                }}
-                              >
-                                Out of Order
-                              </Button>
-                              {onRoomTransferOpen && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="flex-1 text-xs bg-white text-gray-800 hover:bg-gray-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRoomTransferOpen(room.roomNumber);
-                                  }}
-                                >
-                                  Transfer Here
-                                </Button>
-                              )}
-                            </div>
-                          </>
-                        ) : room.status === 'cleaning' ? (
-                          <>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="w-full bg-gray-700 hover:bg-gray-600 text-white"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRoomStatusChange(room.roomNumber, 'available');
-                              }}
-                            >
-                              Click to Book
-                            </Button>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1 text-xs bg-white text-gray-800 hover:bg-gray-100"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRoomStatusChange(room.roomNumber, 'unavailable');
-                                }}
-                              >
-                                Out of Order
-                              </Button>
-                              {onRoomTransferOpen && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="flex-1 text-xs bg-white text-gray-800 hover:bg-gray-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRoomTransferOpen(room.roomNumber);
-                                  }}
-                                >
-                                  Transfer Here
-                                </Button>
-                              )}
-                            </div>
-                          </>
-                        ) : room.status === 'unavailable' ? (
-                          <>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="w-full bg-gray-700 hover:bg-gray-600 text-white"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRoomStatusChange(room.roomNumber, 'available');
-                              }}
-                            >
-                              Click to Book
-                            </Button>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1 text-xs bg-white text-gray-800 hover:bg-gray-100"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRoomStatusChange(room.roomNumber, 'unavailable');
-                                }}
-                              >
-                                Out of Order
-                              </Button>
-                              {onRoomTransferOpen && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="flex-1 text-xs bg-white text-gray-800 hover:bg-gray-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRoomTransferOpen(room.roomNumber);
-                                  }}
-                                >
-                                  Transfer Here
-                                </Button>
-                              )}
-                            </div>
-                          </>
-                        ) : null}
-                      </div>
+    <Card className="bg-white">
+      <CardHeader className="pb-4">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-xl font-semibold text-gray-900">
+            Rooms Status - {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+          </CardTitle>
+          {onBulkBookingOpen && (
+            <Button onClick={onBulkBookingOpen} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Users className="h-4 w-4 mr-2" />
+              Bulk Booking
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-8">
+        {Object.entries(groupedRooms).map(([floor, floorRooms]) => (
+          <div key={floor} className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
+              Floor {floor}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {floorRooms.map((room) => (
+                <div
+                  key={room.roomNumber}
+                  className={`relative bg-white border-2 rounded-lg p-4 transition-all duration-200 hover:shadow-md ${getRoomStatusColor(room.status)}`}
+                >
+                  {/* Room Header */}
+                  <div className="text-center mb-4">
+                    <div className="text-sm font-medium text-gray-600 mb-1">Room</div>
+                    <div className="text-2xl font-bold text-gray-900 mb-2">
+                      {room.roomNumber}
                     </div>
-                  ))}
+
+                    {/* Status Badge */}
+                    <div className="mb-3">
+                      <Badge className={`${getRoomStatusBadgeColor(room.status)} px-3 py-1 text-sm font-medium`}>
+                        {getRoomStatusText(room.status)}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <div className="text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`w-full ${getActionButtonColor(room.status)} font-medium`}
+                      onClick={() => {
+                        if (room.status === 'available') {
+                          handleRoomClick(room);
+                        } else if (room.status === 'booked') {
+                          handleRoomClick(room);
+                        } else if (room.status === 'cleaning' || room.status === 'unavailable') {
+                          handleRoomStatusChange(room.roomNumber, 'available');
+                        }
+                      }}
+                    >
+                      {getActionButtonText(room.status)}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    </>
+        ))}
+      </CardContent>
+    </Card>
   );
 };
 
