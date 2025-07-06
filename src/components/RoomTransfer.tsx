@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
+import hotel from '@/services/hotel';
 
 interface RoomTransferProps {
   isOpen: boolean;
@@ -38,7 +39,7 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
       // Get all bookings from the service
       const response = await GuestRegistrationService.getAllRegistrations();
       const bookings = response.data || [];
-      
+
       // Get currently occupied rooms
       const occupied = bookings.filter((booking: any) => {
         const checkIn = new Date(booking.checkInDate);
@@ -46,23 +47,30 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
         const today = new Date();
         return today >= checkIn && today <= checkOut && booking.status === 'active';
       });
-      
+
       setOccupiedRooms(occupied);
-      
-      // Generate available rooms (this would ideally come from a hotel configuration service)
+
+      const hotelConfigResponse = await hotel.getHotelConfig();
+      const hotelConfig = (hotelConfigResponse).data[0];
+      console.log('Hotel Config:', hotelConfig);
       const allRooms: string[] = [];
-      for (let floor = 1; floor <= 3; floor++) {
-        for (let room = 1; room <= 10; room++) {
-          const roomNumber = `${floor}0${room}`;
-          allRooms.push(roomNumber);
+      if (hotelConfig && hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
+        const totalFloors = Number(hotelConfig.totalFloors);
+        const roomsPerFloor = Number(hotelConfig.roomsPerFloor);
+        for (let floor = 1; floor <= totalFloors; floor++) {
+          for (let room = 1; room <= roomsPerFloor; room++) {
+            // Format room number as e.g. 201, 305, etc.
+            const roomNumber = `${floor}${room.toString().padStart(2, '0')}`;
+            allRooms.push(roomNumber);
+          }
         }
       }
-      
+
       const available = allRooms.filter(roomNumber => {
         const isOccupied = occupied.some((booking: any) => booking.roomNumber === roomNumber);
         return !isOccupied;
       });
-      
+
       setAvailableRooms(available);
     } catch (error) {
       console.error('Error loading room data:', error);
@@ -83,7 +91,7 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
     }
 
     const selectedBookingData = occupiedRooms.find((b: any) => b.id.toString() === selectedBooking);
-    
+
     if (!selectedBookingData) {
       toast({
         title: "Error",
@@ -125,7 +133,7 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
 
       const formData = new FormData();
       formData.append('booking', JSON.stringify(updatedBooking));
-      
+
       await GuestRegistrationService.updateRegistration(selectedBookingData.id, formData);
 
       toast({
@@ -138,14 +146,14 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
       setNewRoomNumber('');
       setTransferReason('');
       setRemarks('');
-      
+
       onClose();
-      
+
       // Trigger refresh if callback is provided
       if (onRefresh) {
         onRefresh();
       }
-      
+
       window.dispatchEvent(new CustomEvent('refreshDashboard'));
     } catch (error) {
       console.error('Error during room transfer:', error);
@@ -242,7 +250,7 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
                 {(() => {
                   const booking = occupiedRooms.find(b => b.id.toString() === selectedBooking);
                   if (!booking) return null;
-                  
+
                   return (
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
@@ -282,7 +290,7 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleTransfer}
               disabled={!selectedBooking || !newRoomNumber || !transferReason}
             >

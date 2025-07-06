@@ -34,6 +34,8 @@ import BulkBooking from '@/components/BulkBooking';
 import BillGeneration from '@/components/BillGeneration';
 import RoomTransfer from '@/components/RoomTransfer';
 import HotelService from '@/services/hotel';
+import GuestDetailsView from '@/components/GuestDetailsView';
+
 
 const Dashboard = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -44,11 +46,22 @@ const Dashboard = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [sessionTime, setSessionTime] = useState('');
 
+
   // New state for additional dialogs
   const [isBulkBookingOpen, setIsBulkBookingOpen] = useState(false);
   const [isBillGenerationOpen, setIsBillGenerationOpen] = useState(false);
   const [isRoomTransferOpen, setIsRoomTransferOpen] = useState(false);
   const [targetRoomForTransfer, setTargetRoomForTransfer] = useState<string>('');
+  // State for Guest Details Dialog
+  const [isGuestDetailsOpen, setIsGuestDetailsOpen] = useState(false);
+  const [selectedGuest, setSelectedGuest] = useState<any>(null);
+
+  const closeGuestDetails = () => setIsGuestDetailsOpen(false);
+  const handleCheckOut = () => {
+    // Implement checkout logic here
+    setIsGuestDetailsOpen(false);
+    refreshDashboard();
+  };
 
   const navigate = useNavigate();
 
@@ -318,6 +331,10 @@ const Dashboard = () => {
                         onBulkBookingOpen={handleBulkBookingOpen}
                         onRoomTransferOpen={handleRoomTransferOpen}
                         onRoomStatusChange={handleRoomStatusChange}
+                        onGuestDetailsOpen={(guest) => {
+                          setSelectedGuest(guest);
+                          setIsGuestDetailsOpen(true);
+                        }}
                       />
                     </div>
                   </div>
@@ -366,6 +383,13 @@ const Dashboard = () => {
         targetRoomNumber={targetRoomForTransfer}
         onRefresh={refreshDashboard}
       />
+      <GuestDetailsView
+              isOpen={isGuestDetailsOpen}
+              onClose={closeGuestDetails}
+              selectedGuest={selectedGuest}
+              onCheckOut={handleCheckOut}
+            />
+
     </div>
   );
 };

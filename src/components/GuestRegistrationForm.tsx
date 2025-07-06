@@ -74,7 +74,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
     wakeUpCallTime: '',
     roomNumber: selectedRoom || '',
     totalGuests: 1,
-    status: 'active',
+    status: 'booked',
   });
 
   const [dragActive, setDragActive] = useState(false);

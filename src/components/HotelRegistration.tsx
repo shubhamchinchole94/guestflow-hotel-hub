@@ -19,7 +19,7 @@ const HotelRegistration = () => {
     hotelLogo: null as File | null,
     totalFloors: 2,
     roomsPerFloor: 4,
-    roomTypes: [{ name: 'Regular', price: 1000 }],
+    roomTypes: [{ name: 'Regular', price: 1000, totalRooms: 10 }],
     extraBedPrice: 500,
     mealPrices: {
       breakfast: 200,
@@ -52,7 +52,7 @@ const HotelRegistration = () => {
   const addRoomType = () => {
     setHotelConfig(prev => ({
       ...prev,
-      roomTypes: [...prev.roomTypes, { name: '', price: 0 }]
+      roomTypes: [...prev.roomTypes, { name: '', price: 0, totalRooms: 0 }]
     }));
   };
 
@@ -227,6 +227,7 @@ const HotelRegistration = () => {
               <div key={index} className="flex gap-4 items-center">
                 <Input placeholder="Room type name" value={room.name} onChange={e => updateRoomType(index, 'name', e.target.value)} required />
                 <Input type="number" placeholder="Price" value={room.price} onChange={e => updateRoomType(index, 'price', parseInt(e.target.value) || 0)} required />
+                 <Input type="number" placeholder="Total Rooms" value={room.totalRooms} onChange={e => updateRoomType(index, 'totalRooms', parseInt(e.target.value) || 0)} required />
                 {hotelConfig.roomTypes.length > 1 && (
                   <Button type="button" size="sm" variant="destructive" onClick={() => removeRoomType(index)}>
                     <X className="h-4 w-4" />

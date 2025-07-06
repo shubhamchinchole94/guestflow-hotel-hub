@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,12 +8,19 @@ import { AlertTriangle, Users, ArrowRight, Clock } from 'lucide-react';
 import HotelService from '@/services/hotel';
 import DashboardService from '@/services/DashboardService';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
+import GuestDetailsView from './GuestDetailsView';
+
 
 interface RoomGridProps {
+
   selectedDate: Date;
   onBulkBookingOpen?: () => void;
   onRoomTransferOpen?: (roomNumber: string) => void;
   onRoomStatusChange?: (roomNumber: string, status: string) => void;
+  openGuestForm?: (roomNumber: string, selectedDate: Date) => void;
+  onGuestDetailsOpen?: (guest: any) => void;
+  
+  
 }
 
 interface Room {
@@ -28,14 +34,18 @@ interface Room {
   hasWakeUpCall?: boolean;
 }
 
-const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomStatusChange }: RoomGridProps) => {
+const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomStatusChange, onGuestDetailsOpen }: RoomGridProps) => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [hoveredRoom, setHoveredRoom] = useState<string | null>(null);
   const [wakeUpAlert, setWakeUpAlert] = useState<string>('');
-  const { openGuestForm, openGuestDetails } = useGuestStore();
+  const { openGuestForm: storeOpenGuestForm } = useGuestStore();
+  const [selectedGuest, setSelectedGuest] = useState<any | null>(null);
+  const [isGuestDetailsOpen, setIsGuestDetailsOpen] = useState(false);
 
+
+  
   useEffect(() => {
-    generateRooms();
+    generateRooms();.
 
     const handleRefresh = () => {
       generateRooms();
@@ -52,31 +62,91 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         GuestRegistrationService.getAllRegistrations(),
         DashboardService.getRoomStatuses(),
       ]);
-
-      const hotelConfig = hotelConfigResponse.data || {};
+      console.log('Hotel Config Response:', hotelConfigResponse);
+      console.log('Bookings Response:', bookingsResponse);
+      console.log('Room Statuses Response:', roomStatusesResponse);
+      const hotelConfig = hotelConfigResponse.data[0] || {};
       const bookings = bookingsResponse.data || [];
       const roomStatuses = roomStatusesResponse.data || {};
       const todayString = format(selectedDate, 'yyyy-MM-dd');
 
-      if (!hotelConfig.totalFloors || !hotelConfig.roomsPerFloor) {
+      // Calculate total rooms from roomTypes object if present
+      let totalRooms = 0;
+      if (hotelConfig.roomTypes && Array.isArray(hotelConfig.roomTypes)) {
+        totalRooms = hotelConfig.roomTypes.reduce((sum: number, type: any) => sum + (type.totalRooms || 0), 0);
+      }
+
+      // If no totalFloors or roomsPerFloor, fallback to default
+      if (hotelConfig.totalFloors || hotelConfig.roomsPerFloor) {
+
         const defaultRooms: Room[] = [];
-        for (let floor = 1; floor <= 2; floor++) {
-          for (let room = 1; room <= 4; room++) {
+        const totalFloors = hotelConfig.totalFloors;
+        const roomsPerFloor = hotelConfig.roomsPerFloor;
+        for (let floor = 1; floor <= totalFloors; floor++) {
+          for (let room = 1; room <= roomsPerFloor; room++) {
             const roomNumber = `${floor}0${room}`;
-            const status = roomStatuses[roomNumber] || 'available';
-            
+            const status =
+              Array.isArray(roomStatuses)
+                ? (roomStatuses.find((r: any) => r.roomNumber === roomNumber)?.status || 'available')
+                : (roomStatuses[roomNumber] || 'available');
+
+            const typeIndex = ((floor - 1) * roomsPerFloor + (room - 1)) % (hotelConfig.roomTypes?.length || 1);
+            const roomType = hotelConfig.roomTypes?.[typeIndex] || { name: 'Regular', price: 1000, status: status };
+
             defaultRooms.push({
               roomNumber,
               floor,
-              type: 'Regular',
-              price: 1000,
+              type: roomType.name,
+              price: roomType.price,
               isOccupied: false,
               guest: null,
-              status: status as any,
+              status: roomType.status || status,
             });
           }
         }
         setRooms(defaultRooms);
+        return;
+      }
+
+      // If roomTypes is present, iterate all objects and show the data
+      if (hotelConfig.roomTypes && Array.isArray(hotelConfig.roomTypes)) {
+        let roomIndex = 1;
+        const generatedRooms: Room[] = [];
+        hotelConfig.roomTypes.forEach((type: any, typeIdx: number) => {
+          for (let i = 0; i < (type.totalRooms || 0); i++) {
+            // Calculate floor and room number based on index if needed
+            const floor = Math.floor((roomIndex - 1) / hotelConfig.roomsPerFloor) + 1;
+            const roomOnFloor = ((roomIndex - 1) % hotelConfig.roomsPerFloor) + 1;
+            const roomNumber = `${floor}0${roomOnFloor}`;
+
+            const roomBooking = bookings.find((booking: any) => {
+              const checkIn = new Date(booking.checkInDate);
+              const checkOut = new Date(booking.checkOutDate);
+              return booking.roomNumber === roomNumber &&
+                selectedDate >= checkIn &&
+                selectedDate <= checkOut &&
+                booking.status === 'active';
+            });
+
+            let status = roomStatuses[roomNumber] || 'available';
+            if (roomBooking) {
+              status = 'booked';
+            }
+
+            generatedRooms.push({
+              roomNumber,
+              floor,
+              type: type.name || 'Regular',
+              price: type.price || 1000,
+              isOccupied: !!roomBooking,
+              guest: roomBooking || null,
+              status: status as any,
+            });
+
+            roomIndex++;
+          }
+        });
+        setRooms(generatedRooms);
         return;
       }
 
@@ -131,7 +201,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
             price: 1000,
             isOccupied: false,
             guest: null,
-            status: 'available',
+            status: 'booked',
             hasWakeUpCall: false
           });
         }
@@ -141,27 +211,41 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
   };
 
   const handleRoomClick = (room: Room) => {
+    console.log('handleRoomClick called', room);
     if (room.status === 'unavailable') {
+     
       return; // Don't allow any action on unavailable rooms
     }
-
-    if (room.isOccupied && room.guest) {
-      openGuestDetails(room.guest);
-    } else if (room.status === 'available') {
-      openGuestForm(room.roomNumber, selectedDate);
+  if (room.status === 'booked' && room.guest) {
+    if (typeof onGuestDetailsOpen === 'function') {
+      onGuestDetailsOpen(room.guest);
+    } else {
+      setSelectedGuest(room.guest);
+      setIsGuestDetailsOpen(true);
     }
+    console.log('Opening GuestDetailsView for guest:', room.guest);
+  } else if (room.status === 'available') {
+    if (typeof storeOpenGuestForm === 'function') {
+      storeOpenGuestForm(room.roomNumber, selectedDate);
+    }
+  }
   };
 
   const handleRoomStatusChange = async (roomNumber: string, newStatus: string) => {
     try {
-      await DashboardService.updateRoomStatus(roomNumber, newStatus);
+      // Update the status locally in the rooms state
+      setRooms((prevRooms) =>
+        prevRooms.map((room) =>
+          room.roomNumber === roomNumber
+            ? { ...room, status: newStatus as Room['status'], isOccupied: newStatus === 'booked' }
+            : room
+        )
+      );
 
+      // Optionally notify parent
       if (onRoomStatusChange) {
         onRoomStatusChange(roomNumber, newStatus);
       }
-
-      generateRooms();
-      window.dispatchEvent(new CustomEvent('refreshDashboard'));
     } catch (error) {
       console.error('Error updating room status:', error);
     }
@@ -176,7 +260,13 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
     }
   };
 
+  const closeGuestDetails = () => {
+    setIsGuestDetailsOpen(false);
+    setSelectedGuest(null);
+  };
+
   const getRoomStatusColor = (status: string) => {
+    console.log('getRoomStatusColor called with status:', status);
     switch (status) {
       case 'available':
         return 'bg-green-50 border-green-200 hover:bg-green-100';
@@ -211,7 +301,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
       case 'available':
         return 'Available';
       case 'booked':
-        return 'Occupied';
+        return 'Booked';
       case 'cleaning':
         return 'Cleaning';
       case 'unavailable':
@@ -259,6 +349,8 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
     return acc;
   }, {});
 
+  // Debug log for modal rendering
+  console.log('Rendering GuestDetailsView', { isGuestDetailsOpen, selectedGuest });
   return (
     <Card className="bg-white">
       <CardHeader className="pb-4">
@@ -276,83 +368,118 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
       </CardHeader>
       <CardContent className="space-y-8">
         {Object.entries(groupedRooms).map(([floor, floorRooms]) => (
+          console.log('Rendering floor:', floor, 'with rooms:', floorRooms),
           <div key={floor} className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
               Floor {floor}
             </h3>
             <div className="grid grid-cols-4 gap-4">
-              {floorRooms.map((room) => (
-                <div
-                  key={room.roomNumber}
-                  className={`relative border-2 rounded-lg p-4 transition-all duration-200 hover:shadow-md ${getRoomStatusColor(room.status)}`}
-                >
-                  {/* Room Header */}
-                  <div className="text-center mb-4">
-                    <div className="text-sm font-medium text-gray-600 mb-1">Room</div>
-                    <div className="text-2xl font-bold text-gray-900 mb-2">
-                      {room.roomNumber}
+              {floorRooms.map((room) => {
+                // Find the room type details from hotelConfig.roomTypes
+                // Fallback to room.type and room.price if not found
+                const hotelConfigRoomType = rooms.length > 0 && rooms[0]?.type
+                  ? rooms.find((r) => r.roomNumber === room.roomNumber)
+                  : null;
+
+                // If you have access to hotelConfig.roomTypes here, you can use it directly.
+                // Since hotelConfig is not in scope, fallback to room.type and room.price.
+                // If you want to show more details, consider lifting hotelConfig to a higher scope.
+
+                return (
+                  <div
+                    key={room.roomNumber}
+                    className={`relative border-2 rounded-lg p-4 transition-all duration-200 hover:shadow-md ${getRoomStatusColor(room.status)}`}
+                  >
+                    {/* Room Header */}
+                    <div className="text-center mb-4">
+                      <div className="text-sm font-medium text-gray-600 mb-1">Room</div>
+                      <div className="text-2xl font-bold text-gray-900 mb-2">
+                        {room.roomNumber}
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className="mb-3">
+                        <Badge className={`${getRoomStatusBadgeColor(room.status)} px-3 py-1 text-sm font-medium`}>
+                          {getRoomStatusText(room.status)}
+                        </Badge>
+                      </div>
                     </div>
 
-                    {/* Status Badge */}
-                    <div className="mb-3">
-                      <Badge className={`${getRoomStatusBadgeColor(room.status)} px-3 py-1 text-sm font-medium`}>
-                        {getRoomStatusText(room.status)}
-                      </Badge>
+                    {/* Action Buttons */}
+                    <div className="space-y-2">
+                      {/* Primary Action Button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`w-full ${getActionButtonColor(room.status)} font-medium`}
+                        onClick={() => {
+                          if (room.status === 'available') {
+                            handleRoomClick(room);
+                          } else if (room.status === 'booked') {
+                          
+                            handleRoomClick(room);
+                          } else if (room.status === 'cleaning' || room.status === 'unavailable') {
+                            handleRoomStatusChange(room.roomNumber, 'available');
+                          }
+                        }}
+                      >
+                        {getActionButtonText(room.status)}
+                      </Button>
+
+                      {/* Transfer Button - Show only for booked rooms */}
+                      {room.status === 'booked' && onRoomTransferOpen && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                          onClick={() => onRoomTransferOpen(room.roomNumber)}
+                        >
+                          <ArrowRight className="h-4 w-4 mr-1" />
+                          Transfer
+                        </Button>
+                      )}
+
+                      {/* Mark Out of Order Button - Show by default for available/cleaning rooms */}
+                      {(room.status === 'available' || room.status === 'cleaning') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-orange-600 hover:text-orange-700 border-orange-200 hover:border-orange-300"
+                          onClick={() => handleRoomStatusChange(room.roomNumber, 'unavailable')}
+                        >
+                          Mark Out of Order
+                        </Button>
+                      )}
+                    </div>
+                    {/* Show room type name and price */}
+                    <div className="mt-4 flex flex-col items-center">
+                      <span className="text-xs text-gray-500">
+                        Type: <span className="font-semibold text-gray-700">{room.type}</span>
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Price: <span className="font-semibold text-gray-700">₹{room.price}</span>
+                      </span>
                     </div>
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="space-y-2">
-                    {/* Primary Action Button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`w-full ${getActionButtonColor(room.status)} font-medium`}
-                      onClick={() => {
-                        if (room.status === 'available') {
-                          handleRoomClick(room);
-                        } else if (room.status === 'booked') {
-                          handleRoomClick(room);
-                        } else if (room.status === 'cleaning' || room.status === 'unavailable') {
-                          handleRoomStatusChange(room.roomNumber, 'available');
-                        }
-                      }}
-                    >
-                      {getActionButtonText(room.status)}
-                    </Button>
-
-                    {/* Transfer Button - Show only for booked rooms */}
-                    {room.status === 'booked' && onRoomTransferOpen && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
-                        onClick={() => onRoomTransferOpen(room.roomNumber)}
-                      >
-                        <ArrowRight className="h-4 w-4 mr-1" />
-                        Transfer
-                      </Button>
-                    )}
-
-                    {/* Mark Out of Order Button - Show by default for available/cleaning rooms */}
-                    {(room.status === 'available' || room.status === 'cleaning') && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-orange-600 hover:text-orange-700 border-orange-200 hover:border-orange-300"
-                        onClick={() => handleRoomStatusChange(room.roomNumber, 'unavailable')}
-                      >
-                        <AlertTriangle className="h-4 w-4 mr-1" />
-                        Mark Out of Order
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}
+        {/* Guest Details Modal */}
+        
+
       </CardContent>
+      
+      {/* Guest Details Modal */}
+      {isGuestDetailsOpen && selectedGuest && (
+        <GuestDetailsView
+          isOpen={isGuestDetailsOpen}
+          onClose={closeGuestDetails}
+          selectedGuest={selectedGuest}
+          onCheckOut={handleCheckout}
+        />
+      )}
     </Card>
   );
 };
