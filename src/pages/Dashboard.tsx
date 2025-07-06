@@ -56,11 +56,9 @@ const Dashboard = () => {
   const [isGuestDetailsOpen, setIsGuestDetailsOpen] = useState(false);
   const [selectedGuest, setSelectedGuest] = useState<any>(null);
 
-  const closeGuestDetails = () => setIsGuestDetailsOpen(false);
-  const handleCheckOut = () => {
-    // Implement checkout logic here
+  const closeGuestDetails = () => {
     setIsGuestDetailsOpen(false);
-    refreshDashboard();
+    setSelectedGuest(null);
   };
 
   const navigate = useNavigate();
@@ -254,6 +252,15 @@ const Dashboard = () => {
     );
   }
 
+  function handleCheckout(roomNumber: any): void {
+    alert(`Checkout for room ${roomNumber} is not implemented yet.`);
+    throw new Error('Function not implemented.');
+  }
+  function handleViewGuestDetails(guest: any): void {
+    setSelectedGuest(guest);
+    setIsGuestDetailsOpen(true);
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <SidebarProvider>
@@ -331,10 +338,7 @@ const Dashboard = () => {
                         onBulkBookingOpen={handleBulkBookingOpen}
                         onRoomTransferOpen={handleRoomTransferOpen}
                         onRoomStatusChange={handleRoomStatusChange}
-                        onGuestDetailsOpen={(guest) => {
-                          setSelectedGuest(guest);
-                          setIsGuestDetailsOpen(true);
-                        }}
+                        onViewGuestDetailsOpen={handleViewGuestDetails}
                       />
                     </div>
                   </div>
@@ -384,12 +388,13 @@ const Dashboard = () => {
         onRefresh={refreshDashboard}
       />
       <GuestDetailsView
-              isOpen={isGuestDetailsOpen}
-              onClose={closeGuestDetails}
-              selectedGuest={selectedGuest}
-              onCheckOut={handleCheckOut}
-            />
-
+        isOpen={isGuestDetailsOpen}
+        onClose={closeGuestDetails}
+        selectedGuest={selectedGuest}
+        onCheckOut={(bookingId) => handleCheckout(selectedGuest.roomNumber)}
+      />
+            
+     
     </div>
   );
 };

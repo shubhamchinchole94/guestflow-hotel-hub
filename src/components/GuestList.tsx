@@ -335,7 +335,7 @@ const GuestList = () => {
       </Card>
 
       {/* Bill Modal */}
-      <Dialog open={showBill} onOpenChange={setShowBill}>
+      {/* <Dialog open={showBill} onOpenChange={setShowBill}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Guest Bill</DialogTitle>
@@ -441,7 +441,7 @@ const GuestList = () => {
             </div>
           )}
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   );
 };
