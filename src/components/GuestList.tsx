@@ -79,7 +79,8 @@ const GuestList = () => {
 
   const getGuestStatus = (guest: any) => {
     if (guest.status) {
-      return guest.status === 'active' ? 'active' : 'checked-out';
+      //return guest.status === 'booked' ? 'booked' : 'checked-out';
+      return guest.status;
     }
     
     const checkIn = new Date(guest.checkInDate);
@@ -93,7 +94,7 @@ const GuestList = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
+      case 'booked':
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
       case 'upcoming':
         return <Badge className="bg-blue-100 text-blue-800">Upcoming</Badge>;

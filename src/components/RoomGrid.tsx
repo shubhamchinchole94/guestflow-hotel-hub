@@ -45,7 +45,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
 
   
   useEffect(() => {
-    generateRooms();.
+    generateRooms();
 
     const handleRefresh = () => {
       generateRooms();

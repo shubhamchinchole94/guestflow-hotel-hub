@@ -135,7 +135,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
         extraBedPrice: hotelConfig.extraBedPrice || 0,
         roomNumber: selectedRoom,
         totalGuests: 1 + prev.familyMembers.length,
-        status: 'active',
+        status: 'booked',
       }));
     }
   }, [isOpen, selectedDate, selectedRoom, formData.stayDuration, hotelConfig]);
@@ -329,7 +329,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
       roomNumber: selectedRoom,
       ...formData,
       totalGuests: 1 + formData.familyMembers.length,
-      status: 'active',
+      status: formData.status || 'booked',
       createdAt: new Date().toISOString(),
       companyDetails: selectedCompany,
       billing: {
