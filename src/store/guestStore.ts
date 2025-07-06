@@ -9,6 +9,8 @@ interface GuestStore {
   selectedGuest: any | null;
   openGuestForm: (roomNumber: string, date: Date) => void;
   closeGuestForm: () => void;
+  openGuestDetails: (guest: any) => void;
+  closeGuestDetails: () => void;
 }
 
 export const useGuestStore = create<GuestStore>((set) => ({
@@ -26,5 +28,13 @@ export const useGuestStore = create<GuestStore>((set) => ({
     isGuestFormOpen: false, 
     selectedRoom: null, 
     selectedDate: null 
+  }),
+  openGuestDetails: (guest) => set({ 
+    isGuestDetailsOpen: true, 
+    selectedGuest: guest 
+  }),
+  closeGuestDetails: () => set({ 
+    isGuestDetailsOpen: false, 
+    selectedGuest: null 
   })
 }));
