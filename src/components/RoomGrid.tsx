@@ -89,7 +89,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
               return booking.roomNumber === roomNumber &&
                 selectedDate >= checkIn &&
                 selectedDate <= checkOut &&
-                booking.status === 'booked';
+                (booking.status === 'booked' || booking.status === 'room_transferred');
             });
 
             defaultRooms.push({
@@ -99,7 +99,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
               price: roomType.price,
               isOccupied: !!roomBooking,
               guest: roomBooking || null,
-              status: roomBooking ? 'booked'  : (roomType.status || status),
+              status: roomBooking ? roomBooking.status : (roomType.status || status),
             });
           }
         }
@@ -213,7 +213,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
     if (room.status === 'unavailable') {
       return; // Don't allow any action on unavailable rooms
     }
-     alert(JSON.stringify(room));
+    // alert(JSON.stringify(room));
     if (room.status === 'booked' || room.status === 'room_transferred' && room.guest) {
       console.log('Room clicked:', room.guest);
       onViewGuestDetailsOpen?.(room.guest);
@@ -263,7 +263,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
   // };
 
   const getRoomStatusColor = (status: string) => {
-    //console.log('getRoomStatusColor called with status:', status);
+    console.log('getRoomStatusColor called with status:', status);
     switch (status) {
       case 'available':
         return 'bg-green-50 border-green-200 hover:bg-green-100';
