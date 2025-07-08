@@ -26,7 +26,7 @@ interface Room {
   price: number;
   isOccupied: boolean;
   guest: any | null;
-  status: 'available' | 'booked' | 'cleaning' | 'unavailable';
+  status: 'available' | 'booked' | 'cleaning' | 'unavailable' | 'room_transferred';
   hasWakeUpCall?: boolean;
 }
 
@@ -54,21 +54,19 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         GuestRegistrationService.getAllRegistrations(),
         DashboardService.getRoomStatuses(),
       ]);
-      console.log('Hotel Config Response:', hotelConfigResponse);
-      console.log('Bookings Response:', bookingsResponse);
-      console.log('Room Statuses Response:', roomStatusesResponse);
       const hotelConfig = hotelConfigResponse.data[0] || {};
       const bookings = bookingsResponse.data || [];
       const roomStatuses = roomStatusesResponse.data || {};
       const todayString = format(selectedDate, 'yyyy-MM-dd');
-
+      console.log('Hotel Config Response:', hotelConfig);
+      console.log('Bookings Response:', bookings);
+      console.log('Room Statuses Response:', roomStatuses);
       // Calculate total rooms from roomTypes object if present
       let totalRooms = 0;
       if (hotelConfig.roomTypes && Array.isArray(hotelConfig.roomTypes)) {
         totalRooms = hotelConfig.roomTypes.reduce((sum: number, type: any) => sum + (type.totalRooms || 0), 0);
       }
 
-      // If no totalFloors or roomsPerFloor, fallback to default
       if (hotelConfig.totalFloors || hotelConfig.roomsPerFloor) {
         const defaultRooms: Room[] = [];
         const totalFloors = hotelConfig.totalFloors;
@@ -101,7 +99,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
               price: roomType.price,
               isOccupied: !!roomBooking,
               guest: roomBooking || null,
-              status: roomBooking ? 'booked' : (roomType.status || status),
+              status: roomBooking ? 'booked'  : (roomType.status || status),
             });
           }
         }
@@ -110,46 +108,46 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
       }
 
       // If roomTypes is present, iterate all objects and show the data
-      if (hotelConfig.roomTypes && Array.isArray(hotelConfig.roomTypes)) {
-        let roomIndex = 1;
-        const generatedRooms: Room[] = [];
-        hotelConfig.roomTypes.forEach((type: any, typeIdx: number) => {
-          for (let i = 0; i < (type.totalRooms || 0); i++) {
-            // Calculate floor and room number based on index if needed
-            const floor = Math.floor((roomIndex - 1) / hotelConfig.roomsPerFloor) + 1;
-            const roomOnFloor = ((roomIndex - 1) % hotelConfig.roomsPerFloor) + 1;
-            const roomNumber = `${floor}0${roomOnFloor}`;
+      // if (hotelConfig.roomTypes && Array.isArray(hotelConfig.roomTypes)) {
+      //   let roomIndex = 1;
+      //   const generatedRooms: Room[] = [];
+      //   hotelConfig.roomTypes.forEach((type: any, typeIdx: number) => {
+      //     for (let i = 0; i < (type.totalRooms || 0); i++) {
+      //       // Calculate floor and room number based on index if needed
+      //       const floor = Math.floor((roomIndex - 1) / hotelConfig.roomsPerFloor) + 1;
+      //       const roomOnFloor = ((roomIndex - 1) % hotelConfig.roomsPerFloor) + 1;
+      //       const roomNumber = `${floor}0${roomOnFloor}`;
 
-            const roomBooking = bookings.find((booking: any) => {
-              const checkIn = new Date(booking.checkInDate);
-              const checkOut = new Date(booking.checkOutDate);
-              return booking.roomNumber === roomNumber &&
-                selectedDate >= checkIn &&
-                selectedDate <= checkOut &&
-                booking.status === 'booked';
-            });
+      //       const roomBooking = bookings.find((booking: any) => {
+      //         const checkIn = new Date(booking.checkInDate);
+      //         const checkOut = new Date(booking.checkOutDate);
+      //         return booking.roomNumber === roomNumber &&
+      //           selectedDate >= checkIn &&
+      //           selectedDate <= checkOut &&
+      //           booking.status === 'booked';
+      //       });
 
-            let status = roomStatuses[roomNumber] || 'available';
-            if (roomBooking) {
-              status = 'booked';
-            }
+      //       let status = roomStatuses[roomNumber] || 'available';
+      //       if (roomBooking) {
+      //         status = 'booked';
+      //       }
 
-            generatedRooms.push({
-              roomNumber,
-              floor,
-              type: type.name || 'Regular',
-              price: type.price || 1000,
-              isOccupied: !!roomBooking,
-              guest: roomBooking || null,
-              status: status as any,
-            });
+      //       generatedRooms.push({
+      //         roomNumber,
+      //         floor,
+      //         type: type.name || 'Regular',
+      //         price: type.price || 1000,
+      //         isOccupied: !!roomBooking,
+      //         guest: roomBooking || null,
+      //         status: status as any,
+      //       });
 
-            roomIndex++;
-          }
-        });
-        setRooms(generatedRooms);
-        return;
-      }
+      //       roomIndex++;
+      //     }
+      //   });
+      //   setRooms(generatedRooms);
+      //   return;
+      // }
 
       const generatedRooms: Room[] = [];
       const { totalFloors, roomsPerFloor, roomTypes = [] } = hotelConfig;
@@ -157,7 +155,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
       for (let floor = 1; floor <= totalFloors; floor++) {
         for (let room = 1; room <= roomsPerFloor; room++) {
           const roomNumber = `${floor}0${room}`;
-          
+
           const roomBooking = bookings.find((booking: any) => {
             const checkIn = new Date(booking.checkInDate);
             const checkOut = new Date(booking.checkOutDate);
@@ -215,15 +213,17 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
     if (room.status === 'unavailable') {
       return; // Don't allow any action on unavailable rooms
     }
-    if (room.status === 'booked' && room.guest) {
-         onViewGuestDetailsOpen?.(room.guest);
+     alert(JSON.stringify(room));
+    if (room.status === 'booked' || room.status === 'room_transferred' && room.guest) {
+      console.log('Room clicked:', room.guest);
+      onViewGuestDetailsOpen?.(room.guest);
     } else if (room.status === 'available') {
       if (typeof storeOpenGuestForm === 'function') {
         storeOpenGuestForm(room.roomNumber, selectedDate);
       }
     }
   };
- 
+
   const handleRoomStatusChange = async (roomNumber: string, newStatus: string) => {
     try {
       // Update the status locally in the rooms state
@@ -263,7 +263,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
   // };
 
   const getRoomStatusColor = (status: string) => {
-    console.log('getRoomStatusColor called with status:', status);
+    //console.log('getRoomStatusColor called with status:', status);
     switch (status) {
       case 'available':
         return 'bg-green-50 border-green-200 hover:bg-green-100';
@@ -273,6 +273,8 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100';
       case 'unavailable':
         return 'bg-orange-50 border-orange-200 hover:bg-orange-100';
+      case 'room_transferred':
+        return 'bg-blue-200 hover:bg-blue-300 text-white';
       default:
         return 'bg-white border-gray-200';
     }
@@ -288,6 +290,8 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'bg-yellow-500 hover:bg-yellow-600 text-white';
       case 'unavailable':
         return 'bg-orange-500 hover:bg-orange-600 text-white';
+      case 'room_transferred':
+        return 'bg-green-500 hover:bg-green-600 text-white';
       default:
         return 'bg-gray-500 hover:bg-gray-600 text-white';
     }
@@ -303,6 +307,8 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'Cleaning';
       case 'unavailable':
         return 'Out of Order';
+      case 'room_transferred':
+        return 'Room Transferred';
       default:
         return 'Unknown';
     }
@@ -318,6 +324,8 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'Mark Available';
       case 'unavailable':
         return 'Mark Available';
+      case 'room_transferred':
+        return 'View Details';
       default:
         return 'Click to Book';
     }
@@ -345,7 +353,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
     acc[room.floor].push(room);
     return acc;
   }, {});
-  
+
   return (
     <Card className="bg-white">
       <CardHeader className="pb-4">
@@ -399,9 +407,8 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                         onClick={() => {
                           if (room.status === 'available') {
                             handleRoomClick(room);
-                          } else if (room.status === 'booked') {
-                            // Use the new function to handle viewing guest details
-                           handleRoomClick(room);
+                          } else if (room.status === 'booked' || room.status === 'room_transferred') {
+                            handleRoomClick(room);
                           } else if (room.status === 'cleaning' || room.status === 'unavailable') {
                             handleRoomStatusChange(room.roomNumber, 'available');
                           }

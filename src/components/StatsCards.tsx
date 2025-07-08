@@ -33,19 +33,24 @@ const StatsCards = () => {
       // Get bookings from service
       const bookingsResponse = await GuestRegistrationService.getAllRegistrations();
       const bookings = bookingsResponse.data || [];
-
+      console.log('Hotel Config Response:', hotelConfig);
+      console.log('Bookings Response by:', bookings);
       if (hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
         const totalRooms = hotelConfig.totalFloors * hotelConfig.roomsPerFloor;
-        const currentBookings = bookings.filter((booking: any) => {
-          const checkIn = new Date(booking.checkInDate);
-          const checkOut = new Date(booking.checkOutDate);
-          const today = new Date();
-          return today >= checkIn && today <= checkOut && booking.status === 'active';
-        });
+        console.log('Total Rooms by me:', totalRooms);
+        // const currentBookings = bookings.filter((booking: any) => {
+        //   const checkIn = new Date(booking.checkInDate);
+        //   const checkOut = new Date(booking.checkOutDate);
+        //   const today = new Date();
+        //   return booking.status === 'booked' || booking.status === 'room_transferred';
+        // });
 
-        const occupiedRooms = currentBookings.length;
+        const occupiedRooms = bookings.length;
         const availableRooms = totalRooms - occupiedRooms;
         const occupancyRate = Math.round((occupiedRooms / totalRooms) * 100);
+        console.log("Calculated Stats:", occupiedRooms);
+        console.log("available Rooms:", availableRooms);
+        console.log("occupancyRate:", occupancyRate);
 
         setStats({
           totalRooms,
@@ -57,12 +62,7 @@ const StatsCards = () => {
     } catch (error) {
       console.error('Error calculating stats:', error);
       // Fallback to default values if service calls fail
-      setStats({
-        totalRooms: 12,
-        availableRooms: 11,
-        occupiedRooms: 1,
-        occupancyRate: 8
-      });
+
     }
   };
 

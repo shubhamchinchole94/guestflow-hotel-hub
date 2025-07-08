@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
 import hotel from '@/services/hotel';
+import { log } from 'console';
 
 interface RoomTransferProps {
   isOpen: boolean;
@@ -39,13 +40,14 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
       // Get all bookings from the service
       const response = await GuestRegistrationService.getAllRegistrations();
       const bookings = response.data || [];
+      console.log('Bookings:', bookings);
 
       // Get currently occupied rooms
       const occupied = bookings.filter((booking: any) => {
         const checkIn = new Date(booking.checkInDate);
         const checkOut = new Date(booking.checkOutDate);
         const today = new Date();
-        return today >= checkIn && today <= checkOut && booking.status === 'active';
+        return today >= checkIn && today <= checkOut && booking.status === 'booked';
       });
 
       setOccupiedRooms(occupied);
@@ -113,9 +115,8 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
     try {
       // Create transfer record
       const transferRecord = {
-        id: Date.now(),
-        originalBookingId: selectedBookingData.id,
-        guestName: `${selectedBookingData.primaryGuest.firstName} ${selectedBookingData.primaryGuest.lastName}`,
+        id: null,
+        bookingId: selectedBookingData.id,
         fromRoom: selectedBookingData.roomNumber,
         toRoom: newRoomNumber,
         transferReason,
@@ -124,16 +125,17 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
         transferredBy: 'Admin' // This would come from user session
       };
 
-      // Update booking with new room number
+      GuestRegistrationService.createRoomTransfer(transferRecord);
+      //Update booking with new room number
       const updatedBooking = {
         ...selectedBookingData,
         roomNumber: newRoomNumber,
-        transferHistory: [...(selectedBookingData.transferHistory || []), transferRecord]
+        status: 'room_transferred',
       };
 
+      // Send updatedBooking as FormData to satisfy backend requirements
       const formData = new FormData();
-      formData.append('booking', JSON.stringify(updatedBooking));
-
+      formData.append('form',new Blob([JSON.stringify(updatedBooking)], { type: 'application/json' }));
       await GuestRegistrationService.updateRegistration(selectedBookingData.id, formData);
 
       toast({
@@ -241,7 +243,7 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
             </CardContent>
           </Card>
 
-          {selectedBooking && (
+          {/* {selectedBooking && (
             <Card>
               <CardHeader>
                 <CardTitle>Current Guest Details</CardTitle>
@@ -284,7 +286,7 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
                 })()}
               </CardContent>
             </Card>
-          )}
+          )} */}
 
           <div className="flex justify-center space-x-4">
             <Button variant="outline" onClick={onClose}>
