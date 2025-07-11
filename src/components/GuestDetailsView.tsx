@@ -17,8 +17,11 @@ interface GuestDetailsViewProps {
 const updateGuestStatus = async (id: string, status: string) => {
   try {
     const response = await GuestRegistrationService.updateStatusOfGuest(id, status);
-
     console.log("Guest status updated:", response.data);
+    toast({
+      title: "Success",
+      description: "Guest checked out successfully.",
+    });
     return response.data;
   } catch (error) {
     console.error("Failed to update guest status:", error);
@@ -48,7 +51,7 @@ const GuestDetailsView: React.FC<GuestDetailsViewProps> = ({
               <CardTitle>Booking Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Check-in Date & Time</Label>
                   <p className="font-medium">
@@ -80,7 +83,7 @@ const GuestDetailsView: React.FC<GuestDetailsViewProps> = ({
               <CardTitle>Primary Guest</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Name</Label>
                   <p className="font-medium">
@@ -124,7 +127,7 @@ const GuestDetailsView: React.FC<GuestDetailsViewProps> = ({
               <CardContent>
                 {selectedGuest.familyMembers.map((member: any, index: number) => (
                   <div key={index} className="border rounded-lg p-4 mb-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <Label>Name</Label>
                         <p className="font-medium">

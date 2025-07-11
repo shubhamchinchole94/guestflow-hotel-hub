@@ -37,7 +37,7 @@ const AdditionalServices: React.FC<AdditionalServicesProps> = ({
         </div>
 
         {/* Wake Up Call */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="form-group">
             <Label>Wake Up Call Required</Label>
             <select

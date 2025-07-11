@@ -12,6 +12,8 @@ import { Search, Eye, IdCard, FileText, DollarSign } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
 import CompanyService from '@/services/company';
+import BillModal from './BillModal';
+import HotelService from '@/services/hotel';
 
 const GuestList = () => {
   const [guests, setGuests] = useState<any[]>([]);
@@ -21,10 +23,12 @@ const GuestList = () => {
   const [billData, setBillData] = useState<any>(null);
   const [companies, setCompanies] = useState<any[]>([]);
   const { openGuestDetails } = useGuestStore();
+  const [hotelConfig, setHotelConfig] = useState<any>(null);
 
   useEffect(() => {
     loadGuests();
     loadCompanies();
+    getHotelConfig();
     
     // Listen for dashboard refresh events
     const handleRefresh = () => {
@@ -57,6 +61,16 @@ const GuestList = () => {
     } catch (error) {
       console.error('Error loading companies:', error);
       setCompanies([]);
+    }
+  };
+
+  const getHotelConfig = async () => {
+    try {
+      const response = await HotelService.getHotelConfig();
+      setHotelConfig(response.data || {});
+    } catch (error) {
+      console.error('Error loading hotel config:', error);
+      setHotelConfig(null);
     }
   };
 
@@ -93,6 +107,7 @@ const GuestList = () => {
   };
 
   const getStatusBadge = (status: string) => {
+   
     switch (status) {
       case 'booked':
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
@@ -100,12 +115,15 @@ const GuestList = () => {
         return <Badge className="bg-blue-100 text-blue-800">Upcoming</Badge>;
       case 'checked-out':
         return <Badge className="bg-gray-100 text-gray-800">Checked Out</Badge>;
+      case 'room_transferred':
+        return <Badge className="bg-blue-100 text-blue-800">Active</Badge>;
       default:
         return <Badge>Unknown</Badge>;
     }
   };
 
  const generateBill = (guestData: any) => {
+
   const selectedCompany = companies.find((c: any) => c.id === guestData.companyId);
 
   const farePerNight = Number(guestData.farePerNight);
@@ -153,7 +171,6 @@ const GuestList = () => {
     companyName: selectedCompany?.companyName || 'Walk-in Guest',
     generatedAt: new Date().toISOString()
   };
-
   console.log("current bill:", bill);
   setBillData(bill);
   setShowBill(true);
@@ -167,17 +184,16 @@ const GuestList = () => {
 
     try {
       // Update guest status to inactive
-      const updatedGuest = { ...guestData, status: 'inactive' };
+      const updatedGuest = { ...guestData, status: 'checked-out' };
       const formData = new FormData();
-      formData.append('booking', JSON.stringify(updatedGuest));
-      
-      await GuestRegistrationService.updateRegistration(guestData.id, formData);
+      formData.append('form',new Blob([JSON.stringify(updatedGuest)], { type: 'application/json' }));
+      await GuestRegistrationService.updateRegistration(updatedGuest.id, formData);
       
       // Generate bill first
       generateBill(guestData);
 
       toast({
-        title: "Check-out Successful",
+        title: "checked-out Successful",
         description: "Guest has been checked out. Room is now in cleaning mode."
       });
       
@@ -186,7 +202,7 @@ const GuestList = () => {
     } catch (error) {
       console.error('Error during checkout:', error);
       toast({
-        title: "Check-out Failed",
+        title: "checked-out Failed",
         description: "An error occurred during check-out"
       });
     }
@@ -333,6 +349,14 @@ const GuestList = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* the Bill Modal */}
+      <BillModal 
+        isOpen={showBill}
+        billData={billData}
+        onClose={() => setShowBill(false)}
+        hotelConfig={hotelConfig}
+      />
 
       {/* Bill Modal */}
       {/* <Dialog open={showBill} onOpenChange={setShowBill}>

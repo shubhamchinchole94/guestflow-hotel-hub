@@ -30,13 +30,13 @@ const RevenueChart = () => {
         // Calculate revenue for this date
         const dayBookings = bookings.filter((booking: any) => {
           const checkInDate = format(new Date(booking.checkInDate), 'yyyy-MM-dd');
-          return checkInDate === dateStr && booking.status === 'active';
+          return checkInDate === dateStr && booking.status === 'checked-out';
         });
         
         const revenue = dayBookings.reduce((sum: number, booking: any) => {
-          return sum + (booking.farePerNight || 0);
+          return sum + Number(booking.farePerNight || 0);
         }, 0);
-        
+
         last7Days.push({
           date: format(date, 'MMM dd'),
           revenue: revenue,
@@ -50,13 +50,12 @@ const RevenueChart = () => {
       const todayStr = format(today, 'yyyy-MM-dd');
       const todayBookings = bookings.filter((booking: any) => {
         const checkInDate = format(new Date(booking.checkInDate), 'yyyy-MM-dd');
-        return checkInDate === todayStr && booking.status === 'active';
+        return checkInDate === todayStr && booking.status === 'checked-out';
       });
       
       const todayRev = todayBookings.reduce((sum: number, booking: any) => {
-        return sum + (booking.farePerNight || 0);
+        return sum + Number(booking.farePerNight || 0);
       }, 0);
-      
       setTodayRevenue(todayRev);
     } catch (error) {
       console.error('Error calculating revenue:', error);

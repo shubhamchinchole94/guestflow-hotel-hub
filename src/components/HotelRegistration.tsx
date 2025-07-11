@@ -149,7 +149,7 @@ const HotelRegistration = () => {
             <CardTitle>Basic Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="hotelName">Hotel Name</Label>
                 <Input id="hotelName" value={hotelConfig.hotelName} onChange={e => setHotelConfig(prev => ({ ...prev, hotelName: e.target.value }))} required />
@@ -162,14 +162,18 @@ const HotelRegistration = () => {
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" value={hotelConfig.email} onChange={e => setHotelConfig(prev => ({ ...prev, email: e.target.value }))} required />
               </div>
-              <div>
+          
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+<div>
                 <Label htmlFor="gstNumber">GST Number</Label>
                 <Input id="gstNumber" value={hotelConfig.gstNumber} onChange={e => setHotelConfig(prev => ({ ...prev, gstNumber: e.target.value }))} />
               </div>
-            </div>
-            <div>
+              <div>
               <Label htmlFor="address">Address</Label>
               <Input id="address" value={hotelConfig.address} onChange={e => setHotelConfig(prev => ({ ...prev, address: e.target.value }))} required />
+            </div>
             </div>
           </CardContent>
         </Card>

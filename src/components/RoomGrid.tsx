@@ -54,7 +54,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         GuestRegistrationService.getAllRegistrations(),
         DashboardService.getRoomStatuses(),
       ]);
-      const hotelConfig = hotelConfigResponse.data[0] || {};
+      const hotelConfig = hotelConfigResponse.data || {};
       const bookings = bookingsResponse.data || [];
       const roomStatuses = roomStatusesResponse.data || {};
       const todayString = format(selectedDate, 'yyyy-MM-dd');
@@ -63,7 +63,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
       console.log('Room Statuses Response:', roomStatuses);
       // Calculate total rooms from roomTypes object if present
       let totalRooms = 0;
-      if (hotelConfig.roomTypes && Array.isArray(hotelConfig.roomTypes)) {
+      if (hotelConfig.roomTypes) {
         totalRooms = hotelConfig.roomTypes.reduce((sum: number, type: any) => sum + (type.totalRooms || 0), 0);
       }
 
@@ -269,12 +269,12 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'bg-green-50 border-green-200 hover:bg-green-100';
       case 'booked':
         return 'bg-red-50 border-red-200 hover:bg-red-100';
-      case 'cleaning':
+      case 'checked-out':
         return 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100';
       case 'unavailable':
         return 'bg-orange-50 border-orange-200 hover:bg-orange-100';
       case 'room_transferred':
-        return 'bg-blue-200 hover:bg-blue-300 text-white';
+        return 'bg-blue-100 border-blue-300 hover:bg-blue-200 text-white';
       default:
         return 'bg-white border-gray-200';
     }
@@ -286,12 +286,12 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'bg-green-500 hover:bg-green-600 text-white';
       case 'booked':
         return 'bg-red-500 hover:bg-red-600 text-white';
-      case 'cleaning':
+      case 'checked-out':
         return 'bg-yellow-500 hover:bg-yellow-600 text-white';
       case 'unavailable':
         return 'bg-orange-500 hover:bg-orange-600 text-white';
       case 'room_transferred':
-        return 'bg-green-500 hover:bg-green-600 text-white';
+        return 'bg-blue-500 hover:bg-blue-600 text-white';
       default:
         return 'bg-gray-500 hover:bg-gray-600 text-white';
     }
@@ -303,7 +303,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'Available';
       case 'booked':
         return 'Booked';
-      case 'cleaning':
+      case 'checked-out':
         return 'Cleaning';
       case 'unavailable':
         return 'Out of Order';

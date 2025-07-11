@@ -94,7 +94,7 @@ const PrimaryGuestDetails: React.FC<PrimaryGuestDetailsProps> = ({
         <CardTitle className="text-lg">Primary Guest Details</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="form-group">
             <Label>First Name</Label>
             <Input
@@ -135,7 +135,7 @@ const PrimaryGuestDetails: React.FC<PrimaryGuestDetailsProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="form-group">
             <Label>Date of Birth</Label>
             <Input
@@ -175,7 +175,7 @@ const PrimaryGuestDetails: React.FC<PrimaryGuestDetailsProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="form-group">
             <Label>Identity Proof Type</Label>
             <select

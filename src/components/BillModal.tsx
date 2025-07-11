@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,10 +12,10 @@ interface BillModalProps {
 
 const BillModal: React.FC<BillModalProps> = ({ isOpen, onClose, billData, hotelConfig }) => {
   if (!billData) return null;
-  console.log("billData:", billData);
+  console.log("hotelConfig:", hotelConfig);
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Guest Bill</DialogTitle>
         </DialogHeader>
@@ -34,7 +33,7 @@ const BillModal: React.FC<BillModalProps> = ({ isOpen, onClose, billData, hotelC
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-3  gap-4">
             <div>
               <Label>Guest Name</Label>
               <p className="font-medium">{billData.guestName}</p>
@@ -111,7 +110,14 @@ const BillModal: React.FC<BillModalProps> = ({ isOpen, onClose, billData, hotelC
               </div>
               <div className="flex justify-between font-bold text-red-600">
                 <span>Amount Due:</span>
-                <span>₹{billData.remainingPayment || (billData.grandTotal - billData.advancePayment)}</span>
+                <span>
+                  ₹
+                  {(
+                  billData.remainingPayment !== undefined
+                    ? billData.remainingPayment
+                    : (billData.grandTotal - billData.advancePayment)
+                  ).toFixed(2)}
+                </span>
               </div>
             </div>
           </div>

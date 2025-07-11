@@ -42,10 +42,9 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [userRole, setUserRole] = useState('');
   const [username, setUsername] = useState('');
-  const [hotelConfig, setHotelConfig] = useState<any>({});
   const [refreshKey, setRefreshKey] = useState(0);
   const [sessionTime, setSessionTime] = useState('');
-
+  const [hotelConfig, setHotelConfig] = useState<any>(null);
 
   // New state for additional dialogs
   const [isBulkBookingOpen, setIsBulkBookingOpen] = useState(false);
@@ -134,6 +133,7 @@ const Dashboard = () => {
   const loadHotelConfig = async () => {
     try {
       const response = await HotelService.getHotelConfig();
+      console.log('Hotel Config:', response.data);
       if (response.data) {
         setHotelConfig(response.data);
       }
@@ -197,7 +197,7 @@ const Dashboard = () => {
       <Sidebar collapsible="icon" className="border-r border-border">
         <SidebarHeader className="p-4 border-b border-border">
           <div className="flex items-center cursor-pointer" onClick={handleLogoClick}>
-            {hotelConfig.hotelLogo ? (
+            {hotelConfig && hotelConfig.hotelLogo ? (
               <img
                 src={
                   hotelConfig.hotelLogo.startsWith("data:image")
@@ -209,12 +209,18 @@ const Dashboard = () => {
               />
             ) : (
               <div className="h-8 w-8 bg-blue-100 flex items-center justify-center mr-3 group-data-[collapsible=icon]:mr-0 rounded">
-                <span className="text-xs text-blue-600 font-bold">GF</span>
+                <span className="text-xs text-blue-600 font-bold">
+                  {hotelConfig && hotelConfig.hotelName
+                    ? hotelConfig.hotelName.charAt(0)
+                    : 'G'}
+                </span>
               </div>
             )}
             <div className="group-data-[collapsible=icon]:hidden">
               <h1 className="text-lg font-bold text-foreground">
-                GuestFlow
+                {hotelConfig && hotelConfig.hotelName
+                  ? hotelConfig.hotelName
+                  : 'GuestFlow'}
               </h1>
             </div>
           </div>
@@ -307,7 +313,7 @@ const Dashboard = () => {
                   {/* Calendar and Room Grid Layout */}
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     {/* Calendar - Takes 1 column */}
-                    <div className="lg:col-span-1">
+                    {/* <div className="lg:col-span-1">
                       <Card>
                         <CardHeader>
                           <CardTitle>Select Date</CardTitle>
@@ -328,7 +334,7 @@ const Dashboard = () => {
                           </Button>
                         </CardContent>
                       </Card>
-                    </div>
+                    </div> */}
 
                     {/* Room Grid - Takes 3 columns */}
                     <div className="lg:col-span-3">

@@ -25,7 +25,7 @@ const BillingSummary: React.FC<BillingSummaryProps> = ({
         <CardTitle className="text-lg">Stay Duration & Payment</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="form-group">
             <Label>Duration Type</Label>
             <select
@@ -55,7 +55,7 @@ const BillingSummary: React.FC<BillingSummaryProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+        <div className="grid grid-cols-3 gap-4 mt-4">
           <div className="form-group">
             <Label>Check-in Date</Label>
             <Input
@@ -155,7 +155,7 @@ const BillingSummary: React.FC<BillingSummaryProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-3 gap-4 mt-4">
           <div className="form-group">
             <Label>Advance Payment (₹)</Label>
             <Input
