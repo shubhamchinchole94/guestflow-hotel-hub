@@ -37,16 +37,16 @@ const HotelRegistration = () => {
   const [logoPreview, setLogoPreview] = useState<string>('');
 
   const handleLogoUpload = (file: File) => {
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    const base64DataUrl = reader.result as string; // this includes data:image/png;base64,...
-    setLogoPreview(base64DataUrl);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64DataUrl = reader.result as string; // this includes data:image/png;base64,...
+      setLogoPreview(base64DataUrl);
 
-    // Save this complete value to backend (and MongoDB)
-    setHotelConfig(prev => ({ ...prev, logoUrl: base64DataUrl }));
+      // Save this complete value to backend (and MongoDB)
+      setHotelConfig(prev => ({ ...prev, logoUrl: base64DataUrl }));
+    };
+    reader.readAsDataURL(file); // This is important!
   };
-  reader.readAsDataURL(file); // This is important!
-};
 
 
   const addRoomType = () => {
@@ -57,34 +57,34 @@ const HotelRegistration = () => {
   };
 
   useEffect(() => {
-  const fetchHotel = async () => {
-    try {
-      const res = await hotel.getHotelConfig();
-      if (res.data && res.data.length > 0) {
-        const config = res.data[0]; // Get the first (only) hotel
+    const fetchHotel = async () => {
+      try {
+        const res = await hotel.getHotelConfig();
+        if (res.data && res.data.length > 0) {
+          const config = res.data; // Get the first (only) hotel
 
-        // Fix logoUrl if it’s raw base64 (i.e. missing prefix)
-        let logoPreview = "";
-        if (config.logoUrl) {
-          logoPreview = config.logoUrl.startsWith("data:image")
-            ? config.logoUrl
-            : `data:image/png;base64,${config.logoUrl}`;
+          // Fix logoUrl if it’s raw base64 (i.e. missing prefix)
+          let logoPreview = "";
+          if (config.logoUrl) {
+            logoPreview = config.logoUrl.startsWith("data:image")
+              ? config.logoUrl
+              : `data:image/png;base64,${config.logoUrl}`;
+          }
+
+          // Set hotel config and preview
+          setHotelConfig({
+            ...config,
+            hotelLogo: null, // File input must remain null
+          });
+          setLogoPreview(logoPreview);
         }
-
-        // Set hotel config and preview
-        setHotelConfig({
-          ...config,
-          hotelLogo: null, // File input must remain null
-        });
-        setLogoPreview(logoPreview);
+      } catch (error) {
+        console.error("Failed to fetch hotel config", error);
       }
-    } catch (error) {
-      console.error("Failed to fetch hotel config", error);
-    }
-  };
+    };
 
-  fetchHotel();
-}, []);
+    fetchHotel();
+  }, []);
 
 
   const removeRoomType = (index: number) => {
@@ -106,35 +106,35 @@ const HotelRegistration = () => {
     }));
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const formData = new FormData();
+    const formData = new FormData();
 
-  formData.append('hotelData', new Blob([JSON.stringify({
-    ...hotelConfig
-  })], { type: 'application/json' }));
+    formData.append('hotelData', new Blob([JSON.stringify({
+      ...hotelConfig
+    })], { type: 'application/json' }));
 
-  if (hotelConfig.hotelLogo) {
-    formData.append('logo', hotelConfig.hotelLogo);
-  }
+    if (hotelConfig.hotelLogo) {
+      formData.append('logo', hotelConfig.hotelLogo);
+    }
 
-  try {
-    await hotel.saveOrUpdateHotel(formData); // Send FormData
+    try {
+      await hotel.saveOrUpdateHotel(formData); // Send FormData
 
-    toast({
-      title: "Hotel Configuration Saved",
-      description: "Your hotel settings have been successfully sent.",
-    });
-  } catch (error) {
-    console.error("Error saving hotel config", error);
-    toast({
-      title: "Save Failed",
-      description: "There was an error saving the configuration.",
-      variant: "destructive",
-    });
-  }
-};
+      toast({
+        title: "Hotel Configuration Saved",
+        description: "Your hotel settings have been successfully sent.",
+      });
+    } catch (error) {
+      console.error("Error saving hotel config", error);
+      toast({
+        title: "Save Failed",
+        description: "There was an error saving the configuration.",
+        variant: "destructive",
+      });
+    }
+  };
 
 
 
@@ -162,18 +162,18 @@ const HotelRegistration = () => {
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" value={hotelConfig.email} onChange={e => setHotelConfig(prev => ({ ...prev, email: e.target.value }))} required />
               </div>
-          
+
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
-<div>
+              <div>
                 <Label htmlFor="gstNumber">GST Number</Label>
                 <Input id="gstNumber" value={hotelConfig.gstNumber} onChange={e => setHotelConfig(prev => ({ ...prev, gstNumber: e.target.value }))} />
               </div>
               <div>
-              <Label htmlFor="address">Address</Label>
-              <Input id="address" value={hotelConfig.address} onChange={e => setHotelConfig(prev => ({ ...prev, address: e.target.value }))} required />
-            </div>
+                <Label htmlFor="address">Address</Label>
+                <Input id="address" value={hotelConfig.address} onChange={e => setHotelConfig(prev => ({ ...prev, address: e.target.value }))} required />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -231,7 +231,7 @@ const HotelRegistration = () => {
               <div key={index} className="flex gap-4 items-center">
                 <Input placeholder="Room type name" value={room.name} onChange={e => updateRoomType(index, 'name', e.target.value)} required />
                 <Input type="number" placeholder="Price" value={room.price} onChange={e => updateRoomType(index, 'price', parseInt(e.target.value) || 0)} required />
-                 <Input type="number" placeholder="Total Rooms" value={room.totalRooms} onChange={e => updateRoomType(index, 'totalRooms', parseInt(e.target.value) || 0)} required />
+                <Input type="number" placeholder="Total Rooms" value={room.totalRooms} onChange={e => updateRoomType(index, 'totalRooms', parseInt(e.target.value) || 0)} required />
                 {hotelConfig.roomTypes.length > 1 && (
                   <Button type="button" size="sm" variant="destructive" onClick={() => removeRoomType(index)}>
                     <X className="h-4 w-4" />

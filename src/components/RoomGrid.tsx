@@ -213,6 +213,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
     if (room.status === 'unavailable') {
       return; // Don't allow any action on unavailable rooms
     }
+   
     // alert(JSON.stringify(room));
     if (room.status === 'booked' || room.status === 'room_transferred' && room.guest) {
       console.log('Room clicked:', room.guest);
@@ -320,7 +321,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'Click to Book';
       case 'booked':
         return 'View Details';
-      case 'cleaning':
+      case 'checked-out':
         return 'Mark Available';
       case 'unavailable':
         return 'Mark Available';

@@ -53,7 +53,7 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
       setOccupiedRooms(occupied);
 
       const hotelConfigResponse = await hotel.getHotelConfig();
-      const hotelConfig = (hotelConfigResponse).data[0];
+      const hotelConfig = (hotelConfigResponse).data;
       console.log('Hotel Config:', hotelConfig);
       const allRooms: string[] = [];
       if (hotelConfig && hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
@@ -64,8 +64,10 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
             // Format room number as e.g. 201, 305, etc.
             const roomNumber = `${floor}${room.toString().padStart(2, '0')}`;
             allRooms.push(roomNumber);
+
           }
         }
+
       }
 
       const available = allRooms.filter(roomNumber => {
@@ -135,7 +137,7 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
 
       // Send updatedBooking as FormData to satisfy backend requirements
       const formData = new FormData();
-      formData.append('form',new Blob([JSON.stringify(updatedBooking)], { type: 'application/json' }));
+      formData.append('form', new Blob([JSON.stringify(updatedBooking)], { type: 'application/json' }));
       await GuestRegistrationService.updateRegistration(selectedBookingData.id, formData);
 
       toast({
