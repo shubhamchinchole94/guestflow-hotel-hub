@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Upload, X, Plus, Hotel } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import hotel from '@/services/hotel';
+import { set } from 'date-fns';
 
 
 const HotelRegistration = () => {
@@ -17,19 +18,19 @@ const HotelRegistration = () => {
     email: '',
     gstNumber: '',
     hotelLogo: null as File | null,
-    totalFloors: 2,
-    roomsPerFloor: 4,
-    roomTypes: [{ name: 'Regular', price: 1000, totalRooms: 10 }],
-    extraBedPrice: 500,
+    totalFloors: 0,
+    roomsPerFloor: 0,
+    roomTypes: [{ name: '', price: 0, totalRooms: 0 }],
+    extraBedPrice: 0,
     mealPrices: {
-      breakfast: 200,
-      lunch: 300,
-      dinner: 350
+      breakfast: 0,
+      lunch: 0,
+      dinner: 0
     },
     enabledMealPlans: {
-      breakfast: true,
-      lunch: true,
-      dinner: true
+      breakfast: false,
+      lunch: false,
+      dinner: false
     }
   });
 
@@ -60,9 +61,31 @@ const HotelRegistration = () => {
     const fetchHotel = async () => {
       try {
         const res = await hotel.getHotelConfig();
-        if (res.data && res.data.length > 0) {
+        
+        if (res.data) {
           const config = res.data; // Get the first (only) hotel
-
+        setHotelConfig({
+            hotelName: config.hotelName || '',
+            address: config.address || '',
+            phone: config.phone || '',
+            email: config.email || '',
+            gstNumber: config.gstNumber || '',
+            hotelLogo: null, // File input must remain null
+            totalFloors: config.totalFloors || 0,
+            roomsPerFloor: config.roomsPerFloor || 0,
+            roomTypes: config.roomTypes || [{ name: '', price: 0, totalRooms: 0 }],
+            extraBedPrice: config.extraBedPrice || 0,
+            mealPrices: {
+              breakfast: config.mealPrices?.breakfast || 0,
+              lunch: config.mealPrices?.lunch || 0,
+              dinner: config.mealPrices?.dinner || 0
+            },
+            enabledMealPlans: {
+              breakfast: !!config.enabledMealPlans?.breakfast,
+              lunch: !!config.enabledMealPlans?.lunch,
+              dinner: !!config.enabledMealPlans?.dinner
+            }
+          });
           // Fix logoUrl if it’s raw base64 (i.e. missing prefix)
           let logoPreview = "";
           if (config.logoUrl) {

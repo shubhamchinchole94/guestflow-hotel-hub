@@ -209,7 +209,7 @@ const Dashboard = () => {
               />
             ) : (
               <div className="h-8 w-8 bg-blue-100 flex items-center justify-center mr-3 group-data-[collapsible=icon]:mr-0 rounded">
-                <span className="text-xs text-blue-600 font-bold">
+                <span className="text-lg text-blue-600 font-bold">
                   {hotelConfig && hotelConfig.hotelName
                     ? hotelConfig.hotelName.charAt(0)
                     : 'G'}
@@ -217,7 +217,7 @@ const Dashboard = () => {
               </div>
             )}
             <div className="group-data-[collapsible=icon]:hidden">
-              <h1 className="text-lg font-bold text-foreground">
+              <h1 className="text-2xl font-bold text-foreground">
                 {hotelConfig && hotelConfig.hotelName
                   ? hotelConfig.hotelName
                   : 'GuestFlow'}
@@ -277,8 +277,8 @@ const Dashboard = () => {
             <header className="flex h-16 items-center justify-between px-6 border-b border-border bg-white">
               <div className="flex items-center space-x-4">
                 <SidebarTrigger />
-                <h1 className="text-xl font-semibold">
-                  GuestFlow Hotel Management
+                <h1 className="text-2xl font-bold">
+                  Welcome To {hotelConfig ? hotelConfig.hotelName : 'GuestFlow'}
                 </h1>
               </div>
               <div className="flex items-center space-x-4">
@@ -298,7 +298,7 @@ const Dashboard = () => {
                 <div className="space-y-6">
                   {/* Dashboard Title and Date */}
                   <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold">Dashboard</h2>
+                    <h2 className="text-3xl font-bold">Dashboard</h2>
                     <p className="text-muted-foreground">
                       {format(new Date(), 'EEEE, MMMM d, yyyy')}
                     </p>

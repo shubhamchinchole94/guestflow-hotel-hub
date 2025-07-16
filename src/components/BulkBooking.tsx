@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import CompanyService from '@/services/company';
 import HotelService from '@/services/hotel';
 import DashboardService from '@/services/DashboardService';
+import GuestRegistrationService from '@/services/GuestRegistrationService';
 
 interface BulkBookingProps {
   isOpen: boolean;
@@ -68,7 +69,7 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
   const loadAvailableRooms = async () => {
     try {
       const [bookingsResponse, roomStatusesResponse, hotelConfigResponse] = await Promise.all([
-        DashboardService.getBookings(),
+        GuestRegistrationService.getAllRegistrations(),
         DashboardService.getRoomStatuses(),
         HotelService.getHotelConfig()
       ]);
@@ -96,9 +97,9 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
             booking.status === 'active';
         });
         const status = roomStatuses[roomNumber];
-        return !isOccupied && status !== 'out-of-order' && status !== 'cleaning';
+        return !isOccupied && !['room_transferred', 'cleaning', 'booked', 'out-of-order', 'unavailable'].includes(status);
       });
-
+      console.log("available rooms:", available);
       setAvailableRooms(available);
     } catch (error) {
       console.error('Error loading available rooms:', error);

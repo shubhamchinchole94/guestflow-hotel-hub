@@ -244,9 +244,9 @@ const GuestList = () => {
                 <tr className="border-b">
                   <th className="text-left py-3 px-2">Guest Name</th>
                   <th className="text-left py-3 px-2">Room</th>
-                  <th className="text-left py-3 px-2">Mobile</th>
+                  {/* <th className="text-left py-3 px-2">Mobile</th>
                   <th className="text-left py-3 px-2">Identity Proof</th>
-                  <th className="text-left py-3 px-2">ID Number</th>
+                  <th className="text-left py-3 px-2">ID Number</th> */}
                   <th className="text-left py-3 px-2">Check-in</th>
                   <th className="text-left py-3 px-2">Check-out</th>
                   <th className="text-left py-3 px-2">Status</th>
@@ -268,7 +268,7 @@ const GuestList = () => {
                         {guest.primaryGuest.firstName} {guest.primaryGuest.lastName}
                       </td>
                       <td className="py-3 px-2">{guest.roomNumber}</td>
-                      <td className="py-3 px-2">{guest.primaryGuest.mobile}</td>
+                      {/* <td className="py-3 px-2">{guest.primaryGuest.mobile}</td>
                       <td className="py-3 px-2">
                         <div className="flex items-center space-x-1">
                           <IdCard className="h-4 w-4 text-muted-foreground" />
@@ -281,7 +281,7 @@ const GuestList = () => {
                         <span className="text-sm font-mono">
                           {guest.primaryGuest.identityNumber || 'Not provided'}
                         </span>
-                      </td>
+                      </td> */}
                       <td className="py-3 px-2">
                         {format(new Date(guest.checkInDate), 'MMM dd, yyyy')} at {guest.checkInTime}
                       </td>
