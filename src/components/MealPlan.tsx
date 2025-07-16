@@ -19,7 +19,7 @@ const MealPlan: React.FC<MealPlanProps> = ({ mealPlan, setFormData, hotelConfig 
       <CardContent>
         <div className="form-group">
           <Label className="text-sm font-medium mb-3 block">Available Meal Plans</Label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-3 gap-4">
             {hotelConfig.enabledMealPlans?.breakfast && hotelConfig.mealPrices?.breakfast && (
               <div className="flex items-center space-x-2">
                 <Checkbox

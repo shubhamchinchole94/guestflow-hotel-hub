@@ -86,7 +86,7 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
           }
         }
       }
-
+     console.log('All Rooms:', allRooms);
       const available = allRooms.filter(roomNumber => {
         const isOccupied = bookings.some((booking: any) => {
           const checkIn = new Date(booking.checkInDate);

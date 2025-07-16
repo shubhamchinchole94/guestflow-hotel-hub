@@ -410,7 +410,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                             handleRoomClick(room);
                           } else if (room.status === 'booked' || room.status === 'room_transferred') {
                             handleRoomClick(room);
-                          } else if (room.status === 'cleaning' || room.status === 'unavailable') {
+                          } else if (room.status === 'cleaning' || room.status === 'unavailable' || room.status === 'checked-out') {
                             handleRoomStatusChange(room.roomNumber, 'available');
                           }
                         }}

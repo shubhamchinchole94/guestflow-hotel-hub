@@ -74,11 +74,11 @@ const FamilyMembers: React.FC<FamilyMembersProps> = ({
               className="absolute top-2 right-2"
               onClick={() => removeFamilyMember(index)}
             >
-              <X className="h-4 w-4" />
+              <X className="h-2 w-2" />
             </Button>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 md:grid-cols-3 gap-4">
                 <div className="form-group">
                   <Label>First Name</Label>
                   <Input
@@ -104,7 +104,7 @@ const FamilyMembers: React.FC<FamilyMembersProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 md:grid-cols-2 gap-4">
                 <div className="form-group">
                   <Label>Date of Birth</Label>
                   <Input
@@ -124,7 +124,7 @@ const FamilyMembers: React.FC<FamilyMembersProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="form-group">
                   <Label>Identity Proof Type</Label>
                   <select
