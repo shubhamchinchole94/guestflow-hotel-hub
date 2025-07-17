@@ -9,6 +9,8 @@ import HotelService from '@/services/hotel';
 import DashboardService from '@/services/DashboardService';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
 import { stringify } from 'querystring';
+import RoomService from '@/services/RoomService';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 interface RoomGridProps {
   selectedDate: Date;
@@ -19,6 +21,8 @@ interface RoomGridProps {
   onViewGuestDetailsOpen?: (guest: any) => void; // New prop for viewing guest details
 }
 
+export type RoomStatus = 'available' | 'booked' | 'cleaning' | 'unavailable' | 'room_transferred';
+
 interface Room {
   roomNumber: string;
   floor: number;
@@ -26,7 +30,7 @@ interface Room {
   price: number;
   isOccupied: boolean;
   guest: any | null;
-  status: 'available' | 'booked' | 'cleaning' | 'unavailable' | 'room_transferred';
+  status: RoomStatus;
   hasWakeUpCall?: boolean;
 }
 
@@ -47,173 +51,94 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
     return () => window.removeEventListener('refreshDashboard', handleRefresh);
   }, [selectedDate]);
 
-  const generateRooms = async () => {
-    try {
-      const [hotelConfigResponse, bookingsResponse, roomStatusesResponse] = await Promise.all([
-        HotelService.getHotelConfig(),
-        GuestRegistrationService.getAllRegistrations(),
-        DashboardService.getRoomStatuses(),
-      ]);
-      const hotelConfig = hotelConfigResponse.data || {};
-      const bookings = bookingsResponse.data || [];
-      const roomStatuses = roomStatusesResponse.data || {};
-      const todayString = format(selectedDate, 'yyyy-MM-dd');
-      console.log('Hotel Config Response:', hotelConfig);
-      console.log('Bookings Response:', bookings);
-      console.log('Room Statuses Response:', roomStatuses);
-      // Calculate total rooms from roomTypes object if present
-      let totalRooms = 0;
-      if (hotelConfig.roomTypes) {
-        totalRooms = hotelConfig.roomTypes.reduce((sum: number, type: any) => sum + (type.totalRooms || 0), 0);
-      }
+ const generateRooms = async () => {
+  try {
+    const [hotelConfigResponse, bookingsResponse, roomStatusesResponse] = await Promise.all([
+      HotelService.getHotelConfig(),
+      GuestRegistrationService.getAllRegistrations(),
+      RoomService.getAllRooms(),
+    ]);
 
-      if (hotelConfig.totalFloors || hotelConfig.roomsPerFloor) {
-        const defaultRooms: Room[] = [];
-        const totalFloors = hotelConfig.totalFloors;
-        const roomsPerFloor = hotelConfig.roomsPerFloor;
-        for (let floor = 1; floor <= totalFloors; floor++) {
-          for (let room = 1; room <= roomsPerFloor; room++) {
-            const roomNumber = `${floor}0${room}`;
-            const status =
-              Array.isArray(roomStatuses)
-                ? (roomStatuses.find((r: any) => r.roomNumber === roomNumber)?.status || 'available')
-                : (roomStatuses[roomNumber] || 'available');
+    const hotelConfig = hotelConfigResponse.data || {};
+    const bookings = bookingsResponse.data || [];
+    const roomStatuses = roomStatusesResponse.data || [];
 
-            const typeIndex = ((floor - 1) * roomsPerFloor + (room - 1)) % (hotelConfig.roomTypes?.length || 1);
-            const roomType = hotelConfig.roomTypes?.[typeIndex] || { name: 'Regular', price: 1000, status: status };
+    const todayString = format(selectedDate, 'yyyy-MM-dd');
 
-            // Find booking for this room and date
-            const roomBooking = bookings.find((booking: any) => {
-              const checkIn = new Date(booking.checkInDate);
-              const checkOut = new Date(booking.checkOutDate);
-              return booking.roomNumber === roomNumber &&
-                selectedDate >= checkIn &&
-                selectedDate <= checkOut &&
-                (booking.status === 'booked' || booking.status === 'room_transferred');
-            });
+    const defaultRooms: Room[] = [];
 
-            defaultRooms.push({
-              roomNumber,
-              floor,
-              type: roomType.name,
-              price: roomType.price,
-              isOccupied: !!roomBooking,
-              guest: roomBooking || null,
-              status: roomBooking ? roomBooking.status : (roomType.status || status),
-            });
-          }
-        }
-        setRooms(defaultRooms);
-        return;
-      }
-
-      // If roomTypes is present, iterate all objects and show the data
-      // if (hotelConfig.roomTypes && Array.isArray(hotelConfig.roomTypes)) {
-      //   let roomIndex = 1;
-      //   const generatedRooms: Room[] = [];
-      //   hotelConfig.roomTypes.forEach((type: any, typeIdx: number) => {
-      //     for (let i = 0; i < (type.totalRooms || 0); i++) {
-      //       // Calculate floor and room number based on index if needed
-      //       const floor = Math.floor((roomIndex - 1) / hotelConfig.roomsPerFloor) + 1;
-      //       const roomOnFloor = ((roomIndex - 1) % hotelConfig.roomsPerFloor) + 1;
-      //       const roomNumber = `${floor}0${roomOnFloor}`;
-
-      //       const roomBooking = bookings.find((booking: any) => {
-      //         const checkIn = new Date(booking.checkInDate);
-      //         const checkOut = new Date(booking.checkOutDate);
-      //         return booking.roomNumber === roomNumber &&
-      //           selectedDate >= checkIn &&
-      //           selectedDate <= checkOut &&
-      //           booking.status === 'booked';
-      //       });
-
-      //       let status = roomStatuses[roomNumber] || 'available';
-      //       if (roomBooking) {
-      //         status = 'booked';
-      //       }
-
-      //       generatedRooms.push({
-      //         roomNumber,
-      //         floor,
-      //         type: type.name || 'Regular',
-      //         price: type.price || 1000,
-      //         isOccupied: !!roomBooking,
-      //         guest: roomBooking || null,
-      //         status: status as any,
-      //       });
-
-      //       roomIndex++;
-      //     }
-      //   });
-      //   setRooms(generatedRooms);
-      //   return;
-      // }
-
-      const generatedRooms: Room[] = [];
-      const { totalFloors, roomsPerFloor, roomTypes = [] } = hotelConfig;
+    if (hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
+      const totalFloors = hotelConfig.totalFloors;
+      const roomsPerFloor = hotelConfig.roomsPerFloor;
 
       for (let floor = 1; floor <= totalFloors; floor++) {
         for (let room = 1; room <= roomsPerFloor; room++) {
           const roomNumber = `${floor}0${room}`;
 
+          // Check if the room is booked for the selected date
           const roomBooking = bookings.find((booking: any) => {
             const checkIn = new Date(booking.checkInDate);
             const checkOut = new Date(booking.checkOutDate);
-            return booking.roomNumber === roomNumber &&
-              selectedDate >= checkIn &&
-              selectedDate <= checkOut &&
-              booking.status === 'booked';
+            return (
+              booking.roomNumber === roomNumber &&
+              // selectedDate >= checkIn &&
+              // selectedDate <= checkOut &&
+              (booking.status === 'booked' || booking.status === 'room_transferred' || booking.status === 'checked-out')
+            );
           });
 
-          const typeIndex = (room - 1) % roomTypes.length;
-          const roomType = roomTypes[typeIndex] || { name: 'Regular', price: 1000 };
+          // Check if room status exists in roomStatuses
+          const manualRoomStatus = Array.isArray(roomStatuses)
+            ? roomStatuses.find((r: any) => r.roomNumber === roomNumber)?.status
+            : roomStatuses[roomNumber];
 
-          let status = roomStatuses[roomNumber] || 'available';
+          // Determine final room status
+          let finalStatus: string;
           if (roomBooking) {
-            status = 'booked';
+            finalStatus = roomBooking.status;
+          } else if (manualRoomStatus) {
+            finalStatus = manualRoomStatus;
+          } else {
+            finalStatus = 'available';
           }
 
-          generatedRooms.push({
+          // Assign room type
+          const typeIndex = ((floor - 1) * roomsPerFloor + (room - 1)) % (hotelConfig.roomTypes?.length || 1);
+          const roomType = hotelConfig.roomTypes?.[typeIndex] || {
+            name: 'Regular',
+            price: 1000,
+            status: finalStatus,
+          };
+
+          defaultRooms.push({
             roomNumber,
             floor,
             type: roomType.name,
             price: roomType.price,
             isOccupied: !!roomBooking,
             guest: roomBooking || null,
-            status: status as any,
+            status: finalStatus as RoomStatus,
           });
         }
       }
 
-      setRooms(generatedRooms);
-    } catch (error) {
-      console.error('Error generating rooms:', error);
-      // Fallback to default rooms if service calls fail
-      const defaultRooms: Room[] = [];
-      for (let floor = 1; floor <= 2; floor++) {
-        for (let room = 1; room <= 4; room++) {
-          const roomNumber = `${floor}0${room}`;
-          defaultRooms.push({
-            roomNumber,
-            floor,
-            type: 'Regular',
-            price: 1000,
-            isOccupied: false,
-            guest: null,
-            status: 'booked',
-            hasWakeUpCall: false
-          });
-        }
-      }
       setRooms(defaultRooms);
     }
-  };
+  } catch (error) {
+    console.error('Error generating rooms:', error);
+  }
+};
 
+
+  const navigate = useNavigate();
   const handleRoomClick = (room: Room) => {
     if (room.status === 'unavailable') {
-      return; // Don't allow any action on unavailable rooms
+      alert('This room is currently out of order.');
+      RoomService.updateRoomStatus(room.roomNumber, 'available');
+      navigate('/dashboard');
+      return;
     }
-   
+
     // alert(JSON.stringify(room));
     if (room.status === 'booked' || room.status === 'room_transferred' && room.guest) {
       console.log('Room clicked:', room.guest);
@@ -228,13 +153,17 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
   const handleRoomStatusChange = async (roomNumber: string, newStatus: string) => {
     try {
       // Update the status locally in the rooms state
-      setRooms((prevRooms) =>
-        prevRooms.map((room) =>
-          room.roomNumber === roomNumber
-            ? { ...room, status: newStatus as Room['status'], isOccupied: newStatus === 'booked' }
-            : room
-        )
-      );
+      // Call RoomService to update the status in the backend
+      await RoomService.updateRoomStatus(roomNumber, newStatus);
+
+      // Update the status locally in the rooms state
+      // setRooms((prevRooms) =>
+      //   prevRooms.map((room) =>
+      //     room.roomNumber === roomNumber
+      //   ? { ...room, status: newStatus as Room['status'], isOccupied: newStatus === 'booked' }
+      //   : room
+      //   )
+      // );
 
       // Optionally notify parent
       if (onRoomStatusChange) {
