@@ -14,6 +14,7 @@ import GuestRegistrationService from '@/services/GuestRegistrationService';
 import CompanyService from '@/services/company';
 import BillModal from './BillModal';
 import HotelService from '@/services/hotel';
+import RoomService from '@/services/RoomService';
 
 const GuestList = () => {
   const [guests, setGuests] = useState<any[]>([]);
@@ -109,7 +110,7 @@ const GuestList = () => {
   const getStatusBadge = (status: string) => {
    
     switch (status) {
-      case 'booked':
+      case 'active':
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
       case 'upcoming':
         return <Badge className="bg-blue-100 text-blue-800">Upcoming</Badge>;
@@ -117,6 +118,8 @@ const GuestList = () => {
         return <Badge className="bg-gray-100 text-gray-800">Checked Out</Badge>;
       case 'room_transferred':
         return <Badge className="bg-blue-100 text-blue-800">Active</Badge>;
+      case 'inactive':
+        return <Badge className="bg-red-100 text-red-800">Inactive</Badge>;
       default:
         return <Badge>Unknown</Badge>;
     }
@@ -184,11 +187,11 @@ const GuestList = () => {
 
     try {
       // Update guest status to inactive
-      const updatedGuest = { ...guestData, status: 'checked-out' };
+      const updatedGuest = { ...guestData, status: 'inactive' };
       const formData = new FormData();
       formData.append('form',new Blob([JSON.stringify(updatedGuest)], { type: 'application/json' }));
       await GuestRegistrationService.updateRegistration(updatedGuest.id, formData);
-      
+      await RoomService.updateRoomStatus(guestData.roomNumber, 'cleaning');
       // Generate bill first
       generateBill(guestData);
 
@@ -211,7 +214,7 @@ const GuestList = () => {
   const handleRowClick = (guest: any) => {
     const status = getGuestStatus(guest);
     
-    if (status === 'checked-out') {
+    if (status === 'inactive') {
       generateBill(guest);
     } else {
       openGuestDetails(guest);
@@ -357,115 +360,6 @@ const GuestList = () => {
         onClose={() => setShowBill(false)}
         hotelConfig={hotelConfig}
       />
-
-      {/* Bill Modal */}
-      {/* <Dialog open={showBill} onOpenChange={setShowBill}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Guest Bill</DialogTitle>
-          </DialogHeader>
-          
-          {billData && (
-            <div className="space-y-4">
-              <div className="text-center border-b pb-4">
-                <h2 className="text-xl font-bold">Hotel Bill</h2>
-                <p className="text-sm text-gray-600">Bill ID: #{billData.bookingId}</p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Guest Name</Label>
-                  <p className="font-medium">{billData.guestName}</p>
-                </div>
-                <div>
-                  <Label>Room Number</Label>
-                  <p className="font-medium">{billData.roomNumber}</p>
-                </div>
-                <div>
-                  <Label>Check-in</Label>
-                  <p className="text-sm">{billData.checkInDate} {billData.checkInTime}</p>
-                </div>
-                <div>
-                  <Label>Check-out</Label>
-                  <p className="text-sm">{billData.checkOutDate} {billData.checkOutTime}</p>
-                </div>
-                <div>
-                  <Label>Company</Label>
-                  <p className="text-sm">{billData.companyName}</p>
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <h3 className="font-semibold mb-2">Billing Details</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Room Charges:</span>
-                    <span>₹{billData.baseFare}</span>
-                  </div>
-                  {billData.extraBedCost > 0 && (
-                    <div className="flex justify-between">
-                      <span>Extra Bed:</span>
-                      <span>₹{billData.extraBedCost}</span>
-                    </div>
-                  )}
-                  {billData.mealCosts > 0 && (
-                    <div className="flex justify-between">
-                      <span>Meals:</span>
-                      <span>₹{billData.mealCosts}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>₹{billData.totalBeforeDiscount}</span>
-                  </div>
-                  {billData.discountAmount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Discount ({billData.discountPercentage}%):</span>
-                      <span>-₹{billData.discountAmount}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>Amount after discount:</span>
-                    <span>₹{billData.finalFare}</span>
-                  </div>
-                  {billData.gstAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span>GST ({billData.gstRate}%):</span>
-                      <span>₹{billData.gstAmount}</span>
-                    </div>
-                  )}
-                  <hr />
-                  <div className="flex justify-between font-bold">
-                    <span>Total Amount:</span>
-                    <span>₹{billData.grandTotal}</span>
-                  </div>
-                  <div className="flex justify-between text-green-600">
-                    <span>Advance Paid:</span>
-                    <span>₹{billData.advancePayment}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-red-600">
-                    <span>Amount Due:</span>
-                    <span>₹{billData.remainingPayment}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center text-xs text-gray-500 border-t pt-2">
-                Generated on: {new Date(billData.generatedAt).toLocaleString()}
-              </div>
-
-              <div className="flex justify-center space-x-4">
-                <Button variant="outline" onClick={() => setShowBill(false)}>
-                  Close
-                </Button>
-                <Button onClick={() => window.print()}>
-                  Print Bill
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog> */}
     </div>
   );
 };

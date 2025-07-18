@@ -17,6 +17,7 @@ import MealPlan from './MealPlan';
 import BillingSummary from './BillingSummary';
 import GuestDetailsView from './GuestDetailsView';
 import BillModal from './BillModal';
+import RoomService from '@/services/RoomService';
 
 interface GuestRegistrationFormProps {
   isOpen: boolean;
@@ -376,9 +377,8 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
           })
         );
       }
-
       await GuestRegistrationService.createRegistration(formDataToSend);
-
+      await RoomService.updateRoomStatus(selectedRoom, 'booked');
       toast({
         title: 'Booking Confirmed',
         description: `Room ${selectedRoom} booked successfully`,

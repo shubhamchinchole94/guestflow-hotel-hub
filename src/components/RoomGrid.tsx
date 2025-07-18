@@ -199,7 +199,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'bg-green-50 border-green-200 hover:bg-green-100';
       case 'booked':
         return 'bg-red-50 border-red-200 hover:bg-red-100';
-      case 'checked-out':
+      case 'cleaning':
         return 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100';
       case 'unavailable':
         return 'bg-orange-50 border-orange-200 hover:bg-orange-100';
@@ -216,7 +216,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'bg-green-500 hover:bg-green-600 text-white';
       case 'booked':
         return 'bg-red-500 hover:bg-red-600 text-white';
-      case 'checked-out':
+      case 'cleaning':
         return 'bg-yellow-500 hover:bg-yellow-600 text-white';
       case 'unavailable':
         return 'bg-orange-500 hover:bg-orange-600 text-white';
@@ -239,6 +239,8 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'Out of Order';
       case 'room_transferred':
         return 'Room Transferred';
+      case 'cleaning':
+        return 'Cleaning';
       default:
         return 'Unknown';
     }
@@ -250,7 +252,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         return 'Click to Book';
       case 'booked':
         return 'View Details';
-      case 'checked-out':
+      case 'cleaning':
         return 'Mark Available';
       case 'unavailable':
         return 'Mark Available';
