@@ -6,6 +6,7 @@ import { TrendingUp } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import DashboardService from '@/services/DashboardService';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
+import RoomService from '@/services/RoomService';
 
 const RevenueChart = () => {
   const [revenueData, setRevenueData] = useState<any[]>([]);
@@ -19,6 +20,8 @@ const RevenueChart = () => {
     try {
       const response = await GuestRegistrationService.getAllRegistrations();
       const bookings = response.data || [];
+      const rooms = await RoomService.getAllRooms();
+      const roomsResponse = rooms.data || [];
       const today = new Date();
       const last7Days = [];
       
@@ -30,7 +33,7 @@ const RevenueChart = () => {
         // Calculate revenue for this date
         const dayBookings = bookings.filter((booking: any) => {
           const checkInDate = format(new Date(booking.checkInDate), 'yyyy-MM-dd');
-          return checkInDate === dateStr && booking.status === 'checked-out';
+          return checkInDate === dateStr && booking.status === 'inactive';
         });
         
         const revenue = dayBookings.reduce((sum: number, booking: any) => {
@@ -50,7 +53,7 @@ const RevenueChart = () => {
       const todayStr = format(today, 'yyyy-MM-dd');
       const todayBookings = bookings.filter((booking: any) => {
         const checkInDate = format(new Date(booking.checkInDate), 'yyyy-MM-dd');
-        return checkInDate === todayStr && booking.status === 'checked-out';
+        return checkInDate === todayStr && booking.status === 'inactive';
       });
       
       const todayRev = todayBookings.reduce((sum: number, booking: any) => {

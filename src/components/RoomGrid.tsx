@@ -98,18 +98,15 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
         }
 
         // Assign room type
-        const typeIndex = ((floor - 1) * roomsPerFloor + (room - 1)) % (hotelConfig.roomTypes?.length || 1);
-        const roomType = hotelConfig.roomTypes?.[typeIndex] || {
-        name: 'Regular',
-        price: 1000,
-        status: finalStatus,
-        };
+        // Find room info by matching roomNumber with RoomService.getAllRooms result
+        const roomInfo = roomStatuses.find((r: any) => r.roomNumber === roomNumber);
+        if (!roomInfo) continue; // skip if no room info found
 
         defaultRooms.push({
         roomNumber,
         floor,
-        type: roomType.name,
-        price: roomType.price,
+        type: roomInfo.type,
+        price: roomInfo.price,
         isOccupied: !!roomBooking,
         guest: roomBooking,
         status: finalStatus,
@@ -125,12 +122,11 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
 };
 
 
-  const navigate = useNavigate();
   const handleRoomClick = (room: Room) => {
     if (room.status === 'unavailable') {
       alert('This room is currently out of order.');
       RoomService.updateRoomStatus(room.roomNumber, 'available');
-      navigate('/dashboard');
+      window.dispatchEvent(new CustomEvent('refreshDashboard'));
       return;
     }
 
@@ -149,7 +145,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
       // Update the status locally in the rooms state
       // Call RoomService to update the status in the backend
       await RoomService.updateRoomStatus(roomNumber, newStatus);
-
+       window.dispatchEvent(new CustomEvent('refreshDashboard'));
       // Update the status locally in the rooms state
       // setRooms((prevRooms) =>
       //   prevRooms.map((room) =>
@@ -288,7 +284,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
             Rooms Status - {format(selectedDate, 'EEEE, MMMM d, yyyy')}
           </CardTitle>
           {onBulkBookingOpen && (
-            <Button onClick={onBulkBookingOpen} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button onClick={onBulkBookingOpen} size="sm" className="bg-black hover:bg-gray-900 text-white">
               <Users className="h-4 w-4 mr-2" />
               Bulk Booking
             </Button>
@@ -331,7 +327,6 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                         size="sm"
                         className={`w-full ${getActionButtonColor(room.status)} font-medium`}
                         onClick={() => {
-                         
                           if (room.status === 'available') {
                             handleRoomClick(room);
                           } else if (room.status === 'booked' || room.status === 'room_transferred') {

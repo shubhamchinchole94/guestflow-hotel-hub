@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
+import RoomService from '@/services/RoomService';
 
 interface GuestDetailsViewProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ interface GuestDetailsViewProps {
 const updateGuestStatus = async (id: string, status: string) => {
   try {
     const response = await GuestRegistrationService.updateStatusOfGuest(id, status);
+    await RoomService.updateRoomStatus(response.data.roomNumber, status);
     console.log("Guest status updated:", response.data);
     toast({
       title: "Success",
@@ -163,18 +165,20 @@ const GuestDetailsView: React.FC<GuestDetailsViewProps> = ({
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
-            <button
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
-              onClick={async () => {
-                try {
-                  await updateGuestStatus(selectedGuest.id, "checked_out");
-                } catch (err) {
-                  // Optional: show toast or error feedback
-                }
-              }}
-            >
-              Check Out & Generate Bill
-            </button>
+            {selectedGuest.status !== "inactive" && (
+              <button
+                className="bg-black hover:bg-gray-900 text-white font-semibold py-2 px-4 rounded"
+                onClick={async () => {
+                  try {
+                    await updateGuestStatus(selectedGuest.id, "inactive");
+                  } catch (err) {
+                    // Optional: show toast or error feedback
+                  }
+                }}
+              >
+                Check Out & Generate Bill
+              </button>
+            )}
 
           </div>
         </div>

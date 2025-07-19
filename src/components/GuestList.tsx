@@ -201,7 +201,7 @@ const GuestList = () => {
       });
       
       loadGuests();
-      window.dispatchEvent(new CustomEvent('refreshDashboard'));
+       window.dispatchEvent(new CustomEvent('refreshDashboard'));
     } catch (error) {
       console.error('Error during checkout:', error);
       toast({
@@ -323,17 +323,19 @@ const GuestList = () => {
                                 <Eye className="h-4 w-4 mr-1" />
                                 View
                               </Button>
-                              <Button 
-                                size="sm" 
-                                className="bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleCheckOut(guest);
-                                }}
-                              >
-                                <DollarSign className="h-4 w-4 mr-1" />
-                                Check Out
-                              </Button>
+                              {status !== 'inactive' && (
+                                <Button 
+                                  size="sm" 
+                                  className="bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCheckOut(guest);
+                                  }}
+                                >
+                                  <span className="mr-1 text-lg">₹</span>
+                                  Check Out
+                                </Button>
+                              )}
                             </>
                           )}
                         </div>

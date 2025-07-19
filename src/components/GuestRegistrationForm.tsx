@@ -75,7 +75,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
     wakeUpCallTime: '',
     roomNumber: selectedRoom || '',
     totalGuests: 1,
-    status: 'booked',
+    status: 'active',
   });
 
   const [dragActive, setDragActive] = useState(false);
@@ -87,7 +87,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchCompanies();
-      fetchHotelConfig();
+      fetchRoomDetails();
     }
   }, [isOpen]);
 
@@ -101,9 +101,20 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
     }
   };
 
-  const fetchHotelConfig = async () => {
-    // Implement hotel config service call when available
-    // For now, use the passed hotelConfig prop
+  const [rooms, setRooms] = useState<any[]>([]);
+  const fetchRoomDetails = async () => {
+   const fetchRooms = async () => {
+      try {
+        const response = await RoomService.getAllRooms();
+        setRooms(response.data || []);
+      } catch (error) {
+        console.error('Error fetching rooms:', error);
+        setRooms([]);
+      }
+      };
+      if (isOpen) {
+      fetchRooms();
+      }
   };
 
   useEffect(() => {
@@ -136,7 +147,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
         extraBedPrice: hotelConfig.extraBedPrice || 0,
         roomNumber: selectedRoom,
         totalGuests: 1 + prev.familyMembers.length,
-        status: 'booked',
+        status: 'active',
       }));
     }
   }, [isOpen, selectedDate, selectedRoom, formData.stayDuration, hotelConfig]);
@@ -208,9 +219,9 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
   };
 
   const getRoomInfo = (roomNumber: string) => {
-    if (!hotelConfig?.roomTypes) return { price: 1000, type: 'Regular' };
-    const roomInfo = hotelConfig.roomTypes.find((room: any) => room.roomNumber === roomNumber);
-    return roomInfo || { price: 1000, type: 'Regular' };
+    if (!rooms || rooms.length === 0) return { price: 1000, type: 'Regular' };
+    const roomInfo = rooms.find((room: any) => room.roomNumber === roomNumber);
+    return roomInfo;
   };
 
   const checkExistingGuest = async (mobile: string) => {
@@ -332,7 +343,7 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
       roomNumber: selectedRoom,
       ...formData,
       totalGuests: 1 + formData.familyMembers.length,
-      status: formData.status || 'booked',
+      status: formData.status || 'active',
       createdAt: new Date().toISOString(),
       companyDetails: selectedCompany,
       billing: {
@@ -692,3 +703,4 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
 };
 
 export default GuestRegistrationForm;
+
