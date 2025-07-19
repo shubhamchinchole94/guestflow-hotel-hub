@@ -11,6 +11,7 @@ import GuestRegistrationService from '@/services/GuestRegistrationService';
 import { stringify } from 'querystring';
 import RoomService from '@/services/RoomService';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { json } from 'stream/consumers';
 
 interface RoomGridProps {
   selectedDate: Date;
@@ -62,7 +63,6 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
     const hotelConfig = hotelConfigResponse.data || {};
     const bookings = bookingsResponse.data || [];
     const roomStatuses = roomStatusesResponse.data || [];
-
     const todayString = format(selectedDate, 'yyyy-MM-dd');
 
     const defaultRooms: Room[] = [];
@@ -72,54 +72,49 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
       const roomsPerFloor = hotelConfig.roomsPerFloor;
 
       for (let floor = 1; floor <= totalFloors; floor++) {
-        for (let room = 1; room <= roomsPerFloor; room++) {
-          const roomNumber = `${floor}0${room}`;
+      for (let room = 1; room <= roomsPerFloor; room++) {
+        const roomNumber = `${floor}0${room}`;
 
-          // Check if the room is booked for the selected date
-          const roomBooking = bookings.find((booking: any) => {
-            const checkIn = new Date(booking.checkInDate);
-            const checkOut = new Date(booking.checkOutDate);
-            return (
-              booking.roomNumber === roomNumber &&
-              // selectedDate >= checkIn &&
-              // selectedDate <= checkOut &&
-              (booking.status === 'booked' || booking.status === 'room_transferred' || booking.status === 'checked-out')
-            );
-          });
+        // Find booking for this roomNumber
+        const roomBooking = bookings.find((booking: any) => booking.roomNumber === roomNumber);
 
-          // Check if room status exists in roomStatuses
-          const manualRoomStatus = Array.isArray(roomStatuses)
-            ? roomStatuses.find((r: any) => r.roomNumber === roomNumber)?.status
-            : roomStatuses[roomNumber];
+        // Find status for this roomNumber in roomStatuses
+        const manualRoomStatus = Array.isArray(roomStatuses)
+        ? roomStatuses.find((r: any) => r.roomNumber === roomNumber)?.status
+        : roomStatuses[roomNumber];
 
-          // Determine final room status
-          let finalStatus: string;
-          if (roomBooking) {
-            finalStatus = roomBooking.status;
-          } else if (manualRoomStatus) {
-            finalStatus = manualRoomStatus;
-          } else {
-            finalStatus = 'available';
-          }
+        let finalStatus: RoomStatus = 'available';
 
-          // Assign room type
-          const typeIndex = ((floor - 1) * roomsPerFloor + (room - 1)) % (hotelConfig.roomTypes?.length || 1);
-          const roomType = hotelConfig.roomTypes?.[typeIndex] || {
-            name: 'Regular',
-            price: 1000,
-            status: finalStatus,
-          };
-
-          defaultRooms.push({
-            roomNumber,
-            floor,
-            type: roomType.name,
-            price: roomType.price,
-            isOccupied: !!roomBooking,
-            guest: roomBooking || null,
-            status: finalStatus as RoomStatus,
-          });
+        if (roomBooking) {
+        // If booking exists, use status from roomStatuses if present, else use booking.status
+        if (manualRoomStatus) {
+          finalStatus = manualRoomStatus;
+        } else if (roomBooking.status) {
+          finalStatus = roomBooking.status;
         }
+        } else if (manualRoomStatus) {
+        // If no booking, but status exists in roomStatuses, use it
+        finalStatus = manualRoomStatus;
+        }
+
+        // Assign room type
+        const typeIndex = ((floor - 1) * roomsPerFloor + (room - 1)) % (hotelConfig.roomTypes?.length || 1);
+        const roomType = hotelConfig.roomTypes?.[typeIndex] || {
+        name: 'Regular',
+        price: 1000,
+        status: finalStatus,
+        };
+
+        defaultRooms.push({
+        roomNumber,
+        floor,
+        type: roomType.name,
+        price: roomType.price,
+        isOccupied: !!roomBooking,
+        guest: roomBooking,
+        status: finalStatus,
+        });
+      }
       }
 
       setRooms(defaultRooms);
@@ -141,7 +136,6 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
 
     // alert(JSON.stringify(room));
     if (room.status === 'booked' || room.status === 'room_transferred' && room.guest) {
-      console.log('Room clicked:', room.guest);
       onViewGuestDetailsOpen?.(room.guest);
     } else if (room.status === 'available') {
       if (typeof storeOpenGuestForm === 'function') {
@@ -193,7 +187,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
   // };
 
   const getRoomStatusColor = (status: string) => {
-    console.log('getRoomStatusColor called with status:', status);
+
     switch (status) {
       case 'available':
         return 'bg-green-50 border-green-200 hover:bg-green-100';
@@ -337,6 +331,7 @@ const RoomGrid = ({ selectedDate, onBulkBookingOpen, onRoomTransferOpen, onRoomS
                         size="sm"
                         className={`w-full ${getActionButtonColor(room.status)} font-medium`}
                         onClick={() => {
+                         
                           if (room.status === 'available') {
                             handleRoomClick(room);
                           } else if (room.status === 'booked' || room.status === 'room_transferred') {

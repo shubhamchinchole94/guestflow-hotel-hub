@@ -140,14 +140,6 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error loading hotel config:', error);
       // Fallback to default config if service fails
-      setHotelConfig({
-        hotelName: 'GuestFlow Hotel Management',
-        totalFloors: 2,
-        roomsPerFloor: 4,
-        roomTypes: [
-          { name: 'Regular', price: 1000 }
-        ]
-      });
     }
   };
 

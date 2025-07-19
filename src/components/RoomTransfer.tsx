@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
 import hotel from '@/services/hotel';
 import { log } from 'console';
+import RoomService from '@/services/RoomService';
 
 interface RoomTransferProps {
   isOpen: boolean;
@@ -44,17 +45,18 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
 
       // Get currently occupied rooms
       const occupied = bookings.filter((booking: any) => {
-        const checkIn = new Date(booking.checkInDate);
-        const checkOut = new Date(booking.checkOutDate);
-        const today = new Date();
-        return today >= checkIn && today <= checkOut && booking.status === 'booked';
+        // const checkIn = new Date(booking.checkInDate);
+        // const checkOut = new Date(booking.checkOutDate);
+        // const today = new Date();
+        return booking.status === 'active' || booking.status === 'room_transferred';
       });
 
       setOccupiedRooms(occupied);
 
       const hotelConfigResponse = await hotel.getHotelConfig();
       const hotelConfig = (hotelConfigResponse).data;
-      console.log('Hotel Config:', hotelConfig);
+      const roomStatusesResponse = await RoomService.getAllRooms();
+      const roomStatuses = roomStatusesResponse.data || [];
       const allRooms: string[] = [];
       if (hotelConfig && hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
         const totalFloors = Number(hotelConfig.totalFloors);
@@ -71,8 +73,22 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
       }
 
       const available = allRooms.filter(roomNumber => {
+        const room = roomStatuses.find((r: any) => r.roomNumber === roomNumber);
         const isOccupied = occupied.some((booking: any) => booking.roomNumber === roomNumber);
-        return !isOccupied;
+        // Exclude rooms that are occupied or have a blocked status
+        if (isOccupied) return false;
+        if (
+          room &&
+          (
+            room.status === 'booked' ||
+            room.status === 'room_transferred' ||
+            room.status === 'cleaning' ||
+            room.status === 'unavailable'
+          )
+        ) {
+          return false;
+        }
+        return true;
       });
 
       setAvailableRooms(available);
@@ -139,7 +155,7 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
       const formData = new FormData();
       formData.append('form', new Blob([JSON.stringify(updatedBooking)], { type: 'application/json' }));
       await GuestRegistrationService.updateRegistration(selectedBookingData.id, formData);
-
+      await RoomService.updateRoomStatus(newRoomNumber, 'room_transferred');
       toast({
         title: "Room Transfer Successful",
         description: `Guest moved from Room ${selectedBookingData.roomNumber} to Room ${newRoomNumber}`
@@ -190,11 +206,13 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
                   required
                 >
                   <option value="">Select a guest</option>
-                  {occupiedRooms.map((booking) => (
-                    <option key={booking.id} value={booking.id}>
-                      Room {booking.roomNumber} - {booking.primaryGuest.firstName} {booking.primaryGuest.lastName}
-                    </option>
-                  ))}
+                  {occupiedRooms
+                    .filter((booking) => booking.roomNumber === targetRoomNumber)
+                    .map((booking) => (
+                      <option key={booking.id} value={booking.id}>
+                        Room {booking.roomNumber} - {booking.primaryGuest.firstName} {booking.primaryGuest.lastName}
+                      </option>
+                    ))}
                 </select>
               </div>
 

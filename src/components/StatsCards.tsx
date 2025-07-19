@@ -5,6 +5,7 @@ import { Hotel, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
 import HotelService from '@/services/hotel';
 import DashboardService from '@/services/DashboardService';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
+import RoomService from '@/services/RoomService';
 
 const StatsCards = () => {
   const [stats, setStats] = useState({
@@ -33,11 +34,12 @@ const StatsCards = () => {
       // Get bookings from service
       const bookingsResponse = await GuestRegistrationService.getAllRegistrations();
       const bookings = bookingsResponse.data || [];
-      console.log('Hotel Config Response:', hotelConfig);
-      console.log('Bookings Response by:', bookings);
+      const roomStatuses =  await RoomService.getAllRooms();
+      const roomstatus = roomStatuses.data || [];
+
+
       if (hotelConfig.totalFloors && hotelConfig.roomsPerFloor) {
         const totalRooms = hotelConfig.totalFloors * hotelConfig.roomsPerFloor;
-        console.log('Total Rooms by me:', totalRooms);
         // const currentBookings = bookings.filter((booking: any) => {
         //   const checkIn = new Date(booking.checkInDate);
         //   const checkOut = new Date(booking.checkOutDate);
@@ -45,7 +47,13 @@ const StatsCards = () => {
         //   return booking.status === 'booked' || booking.status === 'room_transferred';
         // });
 
-        const occupiedRooms = bookings.length;
+        const occupiedRooms = roomstatus.filter(
+          (room: any) =>
+            room.status === 'booked' ||
+            room.status === 'room_transferred' ||
+            room.status === 'cleaning' ||
+            room.status === 'unavailable'
+        ).length;
         const availableRooms = totalRooms - occupiedRooms;
         const occupancyRate = Math.round((occupiedRooms / totalRooms) * 100);
         console.log("Calculated Stats:", occupiedRooms);

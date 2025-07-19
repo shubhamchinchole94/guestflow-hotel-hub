@@ -13,6 +13,7 @@ import CompanyService from '@/services/company';
 import HotelService from '@/services/hotel';
 import DashboardService from '@/services/DashboardService';
 import GuestRegistrationService from '@/services/GuestRegistrationService';
+import RoomService from '@/services/RoomService';
 
 interface BulkBookingProps {
   isOpen: boolean;
@@ -65,12 +66,11 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
       initializeDates();
     }
   }, [isOpen, selectedDate]);
-
   const loadAvailableRooms = async () => {
     try {
       const [bookingsResponse, roomStatusesResponse, hotelConfigResponse] = await Promise.all([
         GuestRegistrationService.getAllRegistrations(),
-        DashboardService.getRoomStatuses(),
+        RoomService.getAllRooms(),
         HotelService.getHotelConfig()
       ]);
 
@@ -87,19 +87,15 @@ const BulkBooking = ({ isOpen, onClose, selectedDate, onRefresh }: BulkBookingPr
           }
         }
       }
-     console.log('All Rooms:', allRooms);
-      const available = allRooms.filter(roomNumber => {
-        const isOccupied = bookings.some((booking: any) => {
-          const checkIn = new Date(booking.checkInDate);
-          const checkOut = new Date(booking.checkOutDate);
-          return booking.roomNumber === roomNumber &&
-            selectedDate >= checkIn && selectedDate <= checkOut &&
-            booking.status === 'active';
-        });
-        const status = roomStatuses[roomNumber];
-        return !isOccupied && !['room_transferred', 'cleaning', 'booked', 'out-of-order', 'unavailable'].includes(status);
-      });
-      console.log("available rooms:", available);
+
+      // Only show rooms NOT in bookings and NOT in roomStatuses
+      const bookedRoomNumbers = new Set(bookings.map((b: any) => b.roomNumber));
+      const statusRoomNumbers = new Set(Object.keys(roomStatuses));
+
+      const available = allRooms.filter(roomNumber => 
+        !bookedRoomNumbers.has(roomNumber) && !statusRoomNumbers.has(roomNumber)
+      );
+
       setAvailableRooms(available);
     } catch (error) {
       console.error('Error loading available rooms:', error);

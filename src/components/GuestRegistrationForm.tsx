@@ -208,7 +208,9 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
   };
 
   const getRoomInfo = (roomNumber: string) => {
-    return { price: 1000, type: 'Regular' };
+    if (!hotelConfig?.roomTypes) return { price: 1000, type: 'Regular' };
+    const roomInfo = hotelConfig.roomTypes.find((room: any) => room.roomNumber === roomNumber);
+    return roomInfo || { price: 1000, type: 'Regular' };
   };
 
   const checkExistingGuest = async (mobile: string) => {
@@ -350,9 +352,9 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
     try {
       const formDataToSend = new FormData();
       formDataToSend.append(
-  'form',
-  new Blob([JSON.stringify(booking)], { type: 'application/json' })
-);
+        'form',
+        new Blob([JSON.stringify(booking)], { type: 'application/json' })
+      );
 
 
       if (formData.primaryGuest.identityFile) {
