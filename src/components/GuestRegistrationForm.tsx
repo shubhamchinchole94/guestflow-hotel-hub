@@ -88,6 +88,8 @@ const GuestRegistrationForm: React.FC<GuestRegistrationFormProps> = ({
     if (isOpen) {
       fetchCompanies();
       fetchRoomDetails();
+    }else{
+    resetForm();
     }
   }, [isOpen]);
 

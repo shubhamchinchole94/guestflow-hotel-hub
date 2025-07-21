@@ -143,12 +143,13 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
         transferredBy: 'Admin' // This would come from user session
       };
 
-      GuestRegistrationService.createRoomTransfer(transferRecord);
+      //GuestRegistrationService.createRoomTransfer(transferRecord);
       //Update booking with new room number
+     
       const updatedBooking = {
         ...selectedBookingData,
         roomNumber: newRoomNumber,
-        status: 'room_transferred',
+        status: 'active',
       };
 
       // Send updatedBooking as FormData to satisfy backend requirements
@@ -156,6 +157,7 @@ const RoomTransfer = ({ isOpen, onClose, targetRoomNumber, onRefresh }: RoomTran
       formData.append('form', new Blob([JSON.stringify(updatedBooking)], { type: 'application/json' }));
       await GuestRegistrationService.updateRegistration(selectedBookingData.id, formData);
       await RoomService.updateRoomStatus(newRoomNumber, 'room_transferred');
+      await RoomService.updateRoomStatus(selectedBookingData.roomNumber, 'unavailable');
       toast({
         title: "Room Transfer Successful",
         description: `Guest moved from Room ${selectedBookingData.roomNumber} to Room ${newRoomNumber}`

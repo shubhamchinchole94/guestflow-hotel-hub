@@ -18,7 +18,7 @@ interface GuestDetailsViewProps {
 const updateGuestStatus = async (id: string, status: string) => {
   try {
     const response = await GuestRegistrationService.updateStatusOfGuest(id, status);
-    await RoomService.updateRoomStatus(response.data.roomNumber, status);
+    await RoomService.updateRoomStatus(response.data.roomNumber, "cleaning");
     console.log("Guest status updated:", response.data);
     toast({
       title: "Success",

@@ -141,17 +141,19 @@ const BillingSummary: React.FC<BillingSummaryProps> = ({
               <span>Total Amount:</span>
               <span>
                 ₹
-                {formData.farePerNight +
-                  (formData.extraBed ? formData.extraBedPrice : 0) +
-                  calculateMealCosts() -
-                  ((
-                    (formData.farePerNight +
-                      (formData.extraBed ? formData.extraBedPrice : 0) +
-                      calculateMealCosts()) *
-                    (companies.find((c) => c.id === formData.companyId)?.roomPriceDiscount || 0)
-                  ) / 100)}
+                {(() => {
+                  const fare = Number(formData.farePerNight) || 0;
+                  const extraBed = formData.extraBed ? Number(formData.extraBedPrice) || 0 : 0;
+                  const meals = Number(calculateMealCosts()) || 0;
+                  const discount =
+                    (fare + extraBed + meals) *
+                    ((companies.find((c) => c.id === formData.companyId)?.roomPriceDiscount || 0) / 100);
+
+                  return fare + extraBed + meals - discount;
+                })()}
               </span>
             </div>
+
           </div>
         </div>
 
@@ -171,14 +173,30 @@ const BillingSummary: React.FC<BillingSummaryProps> = ({
             />
           </div>
           <div className="form-group">
-            <Label>Remaining Payment (₹)</Label>
-            <Input
-              type="number"
-              value={formData.remainingPayment}
-              readOnly
-              className="bg-gray-50"
-            />
-          </div>
+  <Label>Remaining Payment (₹)</Label>
+  <Input
+    type="number"
+    readOnly
+    className="bg-gray-50"
+    value={
+      (() => {
+        const fare = Number(formData.farePerNight) || 0;
+        const extraBed = formData.extraBed ? Number(formData.extraBedPrice) || 0 : 0;
+        const meals = Number(calculateMealCosts()) || 0;
+        const discountPercent =
+          companies.find((c) => c.id === formData.companyId)?.roomPriceDiscount || 0;
+
+        const totalBeforeDiscount = fare + extraBed + meals;
+        const discount = (totalBeforeDiscount * discountPercent) / 100;
+        const totalAmount = totalBeforeDiscount - discount;
+
+        const advancePayment = Number(formData.advancePayment) || 0;
+        return totalAmount - advancePayment;
+      })()
+    }
+  />
+</div>
+
         </div>
       </CardContent>
     </Card>
